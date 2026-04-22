@@ -158,7 +158,7 @@ function AddReceiptPage() {
           total_amount: extracted.total_amount,
           payment_method: extracted.payment_method || null,
           image_path: path,
-          raw_extraction: extracted as unknown as Record<string, unknown>,
+          raw_extraction: JSON.parse(JSON.stringify(extracted)),
         })
         .select("id")
         .single();
