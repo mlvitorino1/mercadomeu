@@ -12,7 +12,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Receipt = Database["public"]["Tables"]["receipts"]["Row"] & { item_count: number };
 
-export const Route = createFileRoute("/cupons")({
+export const Route = createFileRoute("/cupons/")({
   head: () => ({
     meta: [
       { title: "Cupons — Cuponizei" },

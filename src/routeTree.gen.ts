@@ -9,38 +9,92 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdicionarRouteImport } from './routes/adicionar'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CuponsIndexRouteImport } from './routes/cupons.index'
+import { Route as CuponsIdRouteImport } from './routes/cupons.$id'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdicionarRoute = AdicionarRouteImport.update({
+  id: '/adicionar',
+  path: '/adicionar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CuponsIndexRoute = CuponsIndexRouteImport.update({
+  id: '/cupons/',
+  path: '/cupons/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CuponsIdRoute = CuponsIdRouteImport.update({
+  id: '/cupons/$id',
+  path: '/cupons/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/adicionar': typeof AdicionarRoute
+  '/auth': typeof AuthRoute
+  '/cupons/$id': typeof CuponsIdRoute
+  '/cupons/': typeof CuponsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/adicionar': typeof AdicionarRoute
+  '/auth': typeof AuthRoute
+  '/cupons/$id': typeof CuponsIdRoute
+  '/cupons': typeof CuponsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/adicionar': typeof AdicionarRoute
+  '/auth': typeof AuthRoute
+  '/cupons/$id': typeof CuponsIdRoute
+  '/cupons/': typeof CuponsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/adicionar' | '/auth' | '/cupons/$id' | '/cupons/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/adicionar' | '/auth' | '/cupons/$id' | '/cupons'
+  id: '__root__' | '/' | '/adicionar' | '/auth' | '/cupons/$id' | '/cupons/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdicionarRoute: typeof AdicionarRoute
+  AuthRoute: typeof AuthRoute
+  CuponsIdRoute: typeof CuponsIdRoute
+  CuponsIndexRoute: typeof CuponsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/adicionar': {
+      id: '/adicionar'
+      path: '/adicionar'
+      fullPath: '/adicionar'
+      preLoaderRoute: typeof AdicionarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +102,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cupons/': {
+      id: '/cupons/'
+      path: '/cupons'
+      fullPath: '/cupons/'
+      preLoaderRoute: typeof CuponsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cupons/$id': {
+      id: '/cupons/$id'
+      path: '/cupons/$id'
+      fullPath: '/cupons/$id'
+      preLoaderRoute: typeof CuponsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdicionarRoute: AdicionarRoute,
+  AuthRoute: AuthRoute,
+  CuponsIdRoute: CuponsIdRoute,
+  CuponsIndexRoute: CuponsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
