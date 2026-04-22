@@ -14,16 +14,234 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      products: {
+        Row: {
+          canonical_name: string
+          category: Database["public"]["Enums"]["product_category"]
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          canonical_name: string
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          canonical_name?: string
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      receipt_items: {
+        Row: {
+          canonical_name: string | null
+          category: Database["public"]["Enums"]["product_category"]
+          created_at: string
+          description: string
+          id: string
+          product_id: string | null
+          quantity: number
+          receipt_id: string
+          total_price: number
+          unit_price: number
+          user_id: string
+        }
+        Insert: {
+          canonical_name?: string | null
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          description: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          receipt_id: string
+          total_price?: number
+          unit_price?: number
+          user_id: string
+        }
+        Update: {
+          canonical_name?: string | null
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          description?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          receipt_id?: string
+          total_price?: number
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipts: {
+        Row: {
+          created_at: string
+          id: string
+          image_path: string | null
+          payment_method: string | null
+          purchased_at: string
+          raw_extraction: Json | null
+          store_cnpj: string | null
+          store_id: string | null
+          store_name: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          payment_method?: string | null
+          purchased_at: string
+          raw_extraction?: Json | null
+          store_cnpj?: string | null
+          store_id?: string | null
+          store_name: string
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          payment_method?: string | null
+          purchased_at?: string
+          raw_extraction?: Json | null
+          store_cnpj?: string | null
+          store_id?: string | null
+          store_name?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      product_category:
+        | "alimentos"
+        | "bebidas"
+        | "limpeza"
+        | "higiene"
+        | "padaria"
+        | "hortifruti"
+        | "carnes"
+        | "laticinios"
+        | "outros"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +368,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      product_category: [
+        "alimentos",
+        "bebidas",
+        "limpeza",
+        "higiene",
+        "padaria",
+        "hortifruti",
+        "carnes",
+        "laticinios",
+        "outros",
+      ],
+    },
   },
 } as const
