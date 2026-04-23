@@ -95,8 +95,13 @@
 
   --gradient-primary: linear-gradient(135deg, oklch(0.62 0.14 165), oklch(0.55 0.13 215));
   --gradient-soft: linear-gradient(180deg, oklch(0.97 0.015 180), oklch(0.99 0.005 180));
+  --gradient-promo: linear-gradient(135deg, oklch(0.7 0.18 35), oklch(0.65 0.2 22));
   --shadow-card: 0 4px 16px -8px oklch(0.4 0.08 200 / 0.18);
   --shadow-elevated: 0 12px 32px -12px oklch(0.4 0.1 200 / 0.28);
+
+  /* Promoções: laranja-vermelho para urgência */
+  --promo-hot: oklch(0.66 0.21 28);
+  --promo-hot-foreground: oklch(0.99 0.005 180);
 }
 
 .dark {
