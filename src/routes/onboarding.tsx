@@ -77,7 +77,10 @@ function OnboardingPage() {
     favorite_stores: "",
     shopping_frequency: "",
     preferred_payment_method: "",
+    city_id: "",
+    radius_km: 5,
   });
+  const [cities, setCities] = useState<City[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/auth" });
