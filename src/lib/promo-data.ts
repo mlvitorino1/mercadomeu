@@ -62,6 +62,7 @@ export async function fetchActivePromotions(): Promise<{
   stores: Map<string, StoreRow>;
   categories: Map<string, CategoryRow>;
 }> {
+  // RLS already filters: user sees public (user_id IS NULL) + own rows.
   const [promosRes, prodsRes, storesRes, catsRes] = await Promise.all([
     supabase
       .from("promotions")
