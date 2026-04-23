@@ -231,6 +231,8 @@ function HomePage() {
     );
   }
 
+  const forecastTotal = forecast?.forecast_month_total ?? insights.pace;
+  const unlockedCount = achievements.filter((a) => a.unlocked).length;
   const heroTitle = scope === "month" ? "Seus gastos este mês" : "Total acumulado";
   const heroValue = scope === "month" ? insights.totalMonth : insights.totalAllTime;
   const heroCount = scope === "month" ? insights.monthCount : receipts.length;
