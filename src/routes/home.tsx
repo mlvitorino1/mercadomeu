@@ -231,8 +231,12 @@ function HomePage() {
     );
   }
 
-  const forecastTotal = forecast?.forecast_month_total ?? insights.pace;
-  const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const heroTitle = scope === "month" ? "Seus gastos este mês" : "Total acumulado";
+  const heroValue = scope === "month" ? insights.totalMonth : insights.totalAllTime;
+  const heroCount = scope === "month" ? insights.monthCount : receipts.length;
+  const showOnboardingBanner = !loading && !!user && !household?.onboarding_completed_at && receipts.length > 0;
+  const noReceiptsAtAll = !loading && receipts.length === 0;
+  const onlyOldReceipts = !loading && receipts.length > 0 && insights.monthCount === 0;
 
   return (
     <AppLayout>
@@ -240,19 +244,44 @@ function HomePage() {
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
             <p className="text-xs uppercase tracking-wider opacity-80">Olá!</p>
-            <h1 className="mt-1 text-2xl font-bold">Seus gastos este mês</h1>
-            <p className="mt-3 text-4xl font-bold tabular-nums">{formatBRL(insights.totalMonth)}</p>
-            {insights.deltaPct !== null && (
-              <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-xs font-medium">
-                {insights.deltaPct >= 0 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
-                {Math.abs(insights.deltaPct).toFixed(1)}% vs. mês anterior
-              </div>
-            )}
+            <h1 className="mt-1 text-2xl font-bold">{heroTitle}</h1>
+            <p className="mt-3 text-4xl font-bold tabular-nums">{formatBRL(heroValue)}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {scope === "month" && insights.deltaPct !== null && (
+                <div className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-xs font-medium">
+                  {insights.deltaPct >= 0 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
+                  {Math.abs(insights.deltaPct).toFixed(1)}% vs. mês anterior
+                </div>
+              )}
+              {scope === "all" && (
+                <div className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-xs font-medium">
+                  {receipts.length} {receipts.length === 1 ? "cupom" : "cupons"}
+                </div>
+              )}
+            </div>
           </div>
           <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/15">
             <LogOut className="size-5" />
           </Button>
         </div>
+
+        {/* Toggle escopo */}
+        {receipts.length > 0 && (
+          <div className="mt-5 inline-flex rounded-full bg-primary-foreground/15 p-1 text-xs font-semibold">
+            <button
+              onClick={() => setScope("month")}
+              className={`rounded-full px-4 py-1.5 transition-all ${scope === "month" ? "bg-primary-foreground text-primary shadow" : "text-primary-foreground/80"}`}
+            >
+              Este mês
+            </button>
+            <button
+              onClick={() => setScope("all")}
+              className={`rounded-full px-4 py-1.5 transition-all ${scope === "all" ? "bg-primary-foreground text-primary shadow" : "text-primary-foreground/80"}`}
+            >
+              Todos os tempos
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="space-y-3 px-4 py-5">
@@ -262,12 +291,12 @@ function HomePage() {
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-48 w-full" />
           </>
-        ) : insights.monthCount === 0 ? (
+        ) : noReceiptsAtAll ? (
           <Card className="p-8 text-center shadow-card">
             <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-muted">
               <Wallet className="size-7 text-muted-foreground" />
             </div>
-            <h2 className="text-base font-semibold">Sem cupons este mês</h2>
+            <h2 className="text-base font-semibold">Tudo pronto para começar</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Tire a foto do seu primeiro cupom para começar a ver insights.
             </p>
@@ -277,6 +306,46 @@ function HomePage() {
           </Card>
         ) : (
           <>
+            {/* Banner: convidar a completar onboarding */}
+            {showOnboardingBanner && (
+              <button
+                onClick={() => navigate({ to: "/onboarding" })}
+                className="flex w-full items-center gap-3 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 to-accent/30 p-4 text-left shadow-card transition-all hover:shadow-elevated"
+              >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
+                  <Sparkles className="size-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">Personalize seus insights</p>
+                  <p className="text-xs text-muted-foreground">Conte sobre sua casa em 1 minuto.</p>
+                </div>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+              </button>
+            )}
+
+            {/* Aviso: sem cupons este mês mas existem antigos */}
+            {onlyOldReceipts && scope === "month" && (
+              <Card className="border-dashed border-primary/40 bg-primary/5 p-4 shadow-card">
+                <div className="flex items-start gap-3">
+                  <CalendarDays className="size-4 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">Sem cupons este mês</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Você tem {receipts.length} {receipts.length === 1 ? "cupom" : "cupons"} em outros períodos.
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => setScope("all")} className="h-8 text-xs">
+                        Ver todos
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => navigate({ to: "/calendario" })} className="h-8 text-xs">
+                        Abrir calendário
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* Atalhos rápidos */}
             <div className="grid grid-cols-3 gap-2">
               <ShortcutCard to="/calendario" icon={CalendarDays} label="Calendário" />
