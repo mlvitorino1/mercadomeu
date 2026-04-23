@@ -218,6 +218,7 @@ export type Database = {
           source_url: string | null
           status: string
           storage_path: string | null
+          storage_paths: string[]
           store_id: string | null
           store_name_guess: string | null
           updated_at: string
@@ -236,6 +237,7 @@ export type Database = {
           source_url?: string | null
           status?: string
           storage_path?: string | null
+          storage_paths?: string[]
           store_id?: string | null
           store_name_guess?: string | null
           updated_at?: string
@@ -254,6 +256,7 @@ export type Database = {
           source_url?: string | null
           status?: string
           storage_path?: string | null
+          storage_paths?: string[]
           store_id?: string | null
           store_name_guess?: string | null
           updated_at?: string
