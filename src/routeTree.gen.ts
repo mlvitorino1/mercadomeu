@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -19,6 +20,11 @@ import { Route as CuponsIndexRouteImport } from './routes/cupons.index'
 import { Route as ProdutosIdRouteImport } from './routes/produtos.$id'
 import { Route as CuponsIdRouteImport } from './routes/cupons.$id'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
   '/home': typeof HomeRoute
+  '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/cupons/': typeof CuponsIndexRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
   '/home': typeof HomeRoute
+  '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/cupons': typeof CuponsIndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
   '/home': typeof HomeRoute
+  '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/cupons/': typeof CuponsIndexRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/calendario'
     | '/home'
+    | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
     | '/cupons/'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/calendario'
     | '/home'
+    | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
     | '/cupons'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/calendario'
     | '/home'
+    | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
     | '/cupons/'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CalendarioRoute: typeof CalendarioRoute
   HomeRoute: typeof HomeRoute
+  OnboardingRoute: typeof OnboardingRoute
   CuponsIdRoute: typeof CuponsIdRoute
   ProdutosIdRoute: typeof ProdutosIdRoute
   CuponsIndexRoute: typeof CuponsIndexRoute
@@ -149,6 +162,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/home': {
       id: '/home'
       path: '/home'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CalendarioRoute: CalendarioRoute,
   HomeRoute: HomeRoute,
+  OnboardingRoute: OnboardingRoute,
   CuponsIdRoute: CuponsIdRoute,
   ProdutosIdRoute: ProdutosIdRoute,
   CuponsIndexRoute: CuponsIndexRoute,
