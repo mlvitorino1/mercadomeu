@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Check, Users, Wallet, Heart, ShoppingCart, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Users, Wallet, Heart, ShoppingCart, Sparkles, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +38,11 @@ type FormState = {
   favorite_stores: string;
   shopping_frequency: string;
   preferred_payment_method: string;
+  city_id: string;
+  radius_km: number;
 };
+
+type City = { id: string; name: string; state: string };
 
 const RESTRICTIONS = [
   { id: "vegetariano", label: "Vegetariano" },
@@ -54,6 +58,7 @@ const STEPS = [
   { id: 1, icon: Wallet, title: "Orçamento", subtitle: "Quanto investe por mês?" },
   { id: 2, icon: Heart, title: "Preferências", subtitle: "Restrições e mercados favoritos" },
   { id: 3, icon: ShoppingCart, title: "Hábitos", subtitle: "Como você costuma comprar?" },
+  { id: 4, icon: MapPin, title: "Sua região", subtitle: "Onde encontrar promoções perto de você" },
 ];
 
 function OnboardingPage() {
