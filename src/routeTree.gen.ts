@@ -9,12 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdicionarRouteImport } from './routes/adicionar'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProdutosIndexRouteImport } from './routes/produtos.index'
 import { Route as CuponsIndexRouteImport } from './routes/cupons.index'
+import { Route as ProdutosIdRouteImport } from './routes/produtos.$id'
 import { Route as CuponsIdRouteImport } from './routes/cupons.$id'
 
+const CalendarioRoute = CalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -30,9 +38,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProdutosIndexRoute = ProdutosIndexRouteImport.update({
+  id: '/produtos/',
+  path: '/produtos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CuponsIndexRoute = CuponsIndexRouteImport.update({
   id: '/cupons/',
   path: '/cupons/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProdutosIdRoute = ProdutosIdRouteImport.update({
+  id: '/produtos/$id',
+  path: '/produtos/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CuponsIdRoute = CuponsIdRouteImport.update({
@@ -45,42 +63,86 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
+  '/calendario': typeof CalendarioRoute
   '/cupons/$id': typeof CuponsIdRoute
+  '/produtos/$id': typeof ProdutosIdRoute
   '/cupons/': typeof CuponsIndexRoute
+  '/produtos/': typeof ProdutosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
+  '/calendario': typeof CalendarioRoute
   '/cupons/$id': typeof CuponsIdRoute
+  '/produtos/$id': typeof ProdutosIdRoute
   '/cupons': typeof CuponsIndexRoute
+  '/produtos': typeof ProdutosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
+  '/calendario': typeof CalendarioRoute
   '/cupons/$id': typeof CuponsIdRoute
+  '/produtos/$id': typeof ProdutosIdRoute
   '/cupons/': typeof CuponsIndexRoute
+  '/produtos/': typeof ProdutosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/adicionar' | '/auth' | '/cupons/$id' | '/cupons/'
+  fullPaths:
+    | '/'
+    | '/adicionar'
+    | '/auth'
+    | '/calendario'
+    | '/cupons/$id'
+    | '/produtos/$id'
+    | '/cupons/'
+    | '/produtos/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/adicionar' | '/auth' | '/cupons/$id' | '/cupons'
-  id: '__root__' | '/' | '/adicionar' | '/auth' | '/cupons/$id' | '/cupons/'
+  to:
+    | '/'
+    | '/adicionar'
+    | '/auth'
+    | '/calendario'
+    | '/cupons/$id'
+    | '/produtos/$id'
+    | '/cupons'
+    | '/produtos'
+  id:
+    | '__root__'
+    | '/'
+    | '/adicionar'
+    | '/auth'
+    | '/calendario'
+    | '/cupons/$id'
+    | '/produtos/$id'
+    | '/cupons/'
+    | '/produtos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdicionarRoute: typeof AdicionarRoute
   AuthRoute: typeof AuthRoute
+  CalendarioRoute: typeof CalendarioRoute
   CuponsIdRoute: typeof CuponsIdRoute
+  ProdutosIdRoute: typeof ProdutosIdRoute
   CuponsIndexRoute: typeof CuponsIndexRoute
+  ProdutosIndexRoute: typeof ProdutosIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/calendario': {
+      id: '/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof CalendarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -102,11 +164,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/produtos/': {
+      id: '/produtos/'
+      path: '/produtos'
+      fullPath: '/produtos/'
+      preLoaderRoute: typeof ProdutosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cupons/': {
       id: '/cupons/'
       path: '/cupons'
       fullPath: '/cupons/'
       preLoaderRoute: typeof CuponsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/produtos/$id': {
+      id: '/produtos/$id'
+      path: '/produtos/$id'
+      fullPath: '/produtos/$id'
+      preLoaderRoute: typeof ProdutosIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cupons/$id': {
@@ -123,8 +199,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdicionarRoute: AdicionarRoute,
   AuthRoute: AuthRoute,
+  CalendarioRoute: CalendarioRoute,
   CuponsIdRoute: CuponsIdRoute,
+  ProdutosIdRoute: ProdutosIdRoute,
   CuponsIndexRoute: CuponsIndexRoute,
+  ProdutosIndexRoute: ProdutosIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
