@@ -12,7 +12,7 @@ import { computeAchievements, type Achievement } from "@/lib/achievements";
 import {
   LogOut, Wallet, Store, ShoppingBasket, TrendingUp, TrendingDown, ArrowUp, ArrowDown,
   Sparkles, AlertTriangle, Trophy, Lightbulb, Target, Repeat, PiggyBank, Package, CalendarDays,
-  Plus, Award, Compass, Flame,
+  Plus, Award, Compass, Flame, PackageOpen, ChevronRight,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { toast } from "sonner";
@@ -20,13 +20,16 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Receipt = Database["public"]["Tables"]["receipts"]["Row"];
 type Item = Database["public"]["Tables"]["receipt_items"]["Row"];
+type Household = Database["public"]["Tables"]["household_profile"]["Row"];
 
 type Tip = { title: string; body: string; icon: "swap" | "alert" | "save" | "bulk" | "schedule" };
+type StockAlert = { product: string; days_left_estimate: number; reason: string };
 type Forecast = {
   forecast_month_total: number;
   forecast_confidence: "baixa" | "média" | "alta";
   forecast_explanation: string;
   tips: Tip[];
+  stock_alerts: StockAlert[];
 };
 
 export const Route = createFileRoute("/home")({
@@ -49,9 +52,11 @@ function HomePage() {
   const navigate = useNavigate();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [household, setHousehold] = useState<Household | null>(null);
   const [loading, setLoading] = useState(true);
   const [forecast, setForecast] = useState<Forecast | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
+  const [scope, setScope] = useState<"month" | "all">("month");
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/auth" });
@@ -61,12 +66,14 @@ function HomePage() {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [r, i] = await Promise.all([
+      const [r, i, h] = await Promise.all([
         supabase.from("receipts").select("*").order("purchased_at", { ascending: false }),
         supabase.from("receipt_items").select("*"),
+        supabase.from("household_profile").select("*").eq("user_id", user.id).maybeSingle(),
       ]);
       setReceipts(r.data ?? []);
       setItems(i.data ?? []);
+      setHousehold(h.data ?? null);
       setLoading(false);
     })();
   }, [user]);
@@ -83,35 +90,38 @@ function HomePage() {
       return d >= startPrev && d <= endPrev;
     });
 
+    // Escopo selecionado: mês atual OU todos os tempos
+    const scopeReceipts = scope === "month" ? monthReceipts : receipts;
+    const scopeIds = new Set(scopeReceipts.map((r) => r.id));
+    const scopeItems = items.filter((it) => scopeIds.has(it.receipt_id));
+
+    const totalScope = scopeReceipts.reduce((s, r) => s + Number(r.total_amount), 0);
     const totalMonth = monthReceipts.reduce((s, r) => s + Number(r.total_amount), 0);
     const totalPrev = prevMonthReceipts.reduce((s, r) => s + Number(r.total_amount), 0);
     const deltaPct = totalPrev > 0 ? ((totalMonth - totalPrev) / totalPrev) * 100 : null;
 
-    const monthIds = new Set(monthReceipts.map((r) => r.id));
-    const monthItems = items.filter((it) => monthIds.has(it.receipt_id));
-
     const storeMap = new Map<string, number>();
-    monthReceipts.forEach((r) => storeMap.set(r.store_name, (storeMap.get(r.store_name) ?? 0) + 1));
+    scopeReceipts.forEach((r) => storeMap.set(r.store_name, (storeMap.get(r.store_name) ?? 0) + 1));
     const topStore = [...storeMap.entries()].sort((a, b) => b[1] - a[1])[0];
 
     const productMap = new Map<string, number>();
-    monthItems.forEach((it) => {
+    scopeItems.forEach((it) => {
       const k = it.canonical_name || it.description;
       productMap.set(k, (productMap.get(k) ?? 0) + Number(it.quantity));
     });
     const topProduct = [...productMap.entries()].sort((a, b) => b[1] - a[1])[0];
 
-    const sortedByPrice = [...monthItems].sort((a, b) => Number(b.unit_price) - Number(a.unit_price));
+    const sortedByPrice = [...scopeItems].sort((a, b) => Number(b.unit_price) - Number(a.unit_price));
     const mostExpensive = sortedByPrice[0];
     const cheapest = sortedByPrice[sortedByPrice.length - 1];
 
     const catMap = new Map<string, number>();
-    monthItems.forEach((it) => catMap.set(it.category, (catMap.get(it.category) ?? 0) + Number(it.total_price)));
+    scopeItems.forEach((it) => catMap.set(it.category, (catMap.get(it.category) ?? 0) + Number(it.total_price)));
     const byCategory = [...catMap.entries()]
       .map(([k, v]) => ({ name: CATEGORY_LABELS[k] ?? k, value: Number(v.toFixed(2)) }))
       .sort((a, b) => b.value - a.value);
 
-    // Alertas: produtos cuja última compra subiu ≥10% vs. anterior
+    // Alertas de aumento: sempre considerando todos os itens (independente do escopo)
     const productHistory = new Map<string, { price: number; date: string }[]>();
     items.forEach((it) => {
       const k = (it.canonical_name || it.description).toLowerCase();
@@ -130,16 +140,19 @@ function HomePage() {
       }
     });
 
-    // Pace do mês para estimativa local (fallback antes da IA)
     const dayOfMonth = now.getDate();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const pace = dayOfMonth > 0 ? (totalMonth / dayOfMonth) * daysInMonth : 0;
 
+    const latestReceiptDate = receipts[0] ? new Date(receipts[0].purchased_at) : null;
+    const totalAllTime = receipts.reduce((s, r) => s + Number(r.total_amount), 0);
+
     return {
-      totalMonth, totalPrev, deltaPct, topStore, topProduct, mostExpensive, cheapest,
-      byCategory, monthCount: monthReceipts.length, alerts, pace, dayOfMonth, daysInMonth,
+      totalScope, totalMonth, totalPrev, totalAllTime, deltaPct, topStore, topProduct, mostExpensive, cheapest,
+      byCategory, monthCount: monthReceipts.length, scopeCount: scopeReceipts.length,
+      alerts, pace, dayOfMonth, daysInMonth, latestReceiptDate,
     };
-  }, [receipts, items]);
+  }, [receipts, items, scope]);
 
   const achievements = useMemo<Achievement[]>(() => {
     const uniqueStores = new Set(receipts.map((r) => r.store_name)).size;
@@ -171,19 +184,44 @@ function HomePage() {
         top_lojas: insights.topStore ? [{ nome: insights.topStore[0], visitas: insights.topStore[1] }] : [],
         gastos_por_categoria: insights.byCategory,
         alertas_aumento: insights.alerts.slice(0, 5),
+        compras_recentes: items
+          .slice()
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 30)
+          .map((it) => ({
+            produto: it.canonical_name || it.description,
+            categoria: it.category,
+            quantidade: Number(it.quantity),
+            comprado_em: it.created_at,
+          })),
       };
 
-      const { data, error } = await supabase.functions.invoke("insights-ai", { body: { summary } });
+      const householdPayload = household
+        ? {
+            adultos: household.adults,
+            criancas: household.children,
+            pets: household.pets,
+            renda_faixa: household.income_range,
+            orcamento_mercado: household.monthly_grocery_budget,
+            restricoes: household.restrictions,
+            mercados_favoritos: household.favorite_stores,
+            frequencia_compras: household.shopping_frequency,
+            pagamento_preferido: household.preferred_payment_method,
+          }
+        : null;
+
+      const { data, error } = await supabase.functions.invoke("insights-ai", {
+        body: { summary, household: householdPayload },
+      });
       if (error) {
         if (error.message?.includes("429")) toast.error("Muitas requisições. Aguarde alguns segundos.");
         else if (error.message?.includes("402")) toast.error("Sem créditos na Lovable AI.");
-        // Falha silenciosa — usamos pace local como fallback no UI
       } else if (data && !data.error) {
         setForecast(data as Forecast);
       }
       setForecastLoading(false);
     })();
-  }, [user, loading, receipts.length, insights, forecast, forecastLoading]);
+  }, [user, loading, receipts.length, insights, forecast, forecastLoading, household, items]);
 
   if (authLoading || !user) {
     return (
