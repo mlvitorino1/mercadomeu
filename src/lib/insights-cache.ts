@@ -1,5 +1,6 @@
 // Cache helper para insights de IA: hash determinístico + leitura/gravação na tabela ai_insights.
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 export type InsightKind = "forecast" | "stock";
 
@@ -86,7 +87,7 @@ export async function writeCache<T>(
           user_id: userId,
           kind,
           input_hash: inputHash,
-          payload: payload as unknown as Record<string, unknown>,
+          payload: payload as unknown as Json,
           generated_at: new Date().toISOString(),
         },
       ],
