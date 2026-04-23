@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          data_version: number
+          generated_at: string
+          id: string
+          input_hash: string
+          kind: string
+          payload: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          data_version?: number
+          generated_at?: string
+          id?: string
+          input_hash: string
+          kind: string
+          payload: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          data_version?: number
+          generated_at?: string
+          id?: string
+          input_hash?: string
+          kind?: string
+          payload?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       household_profile: {
         Row: {
           adults: number
