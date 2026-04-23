@@ -151,7 +151,7 @@ function PromocoesHome() {
           ) : (
             <EconomyMeter value={economyToday} />
           )}
-          <p className="mt-2 text-xs text-white/80">
+          <p className="mt-2 text-xs text-slate-800">
             {myPromos.length > 0
               ? `${myPromos.length} ofertas dos seus panfletos`
               : "Cadastre um panfleto pra começar a economizar"}
