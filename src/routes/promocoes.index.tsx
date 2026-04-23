@@ -127,7 +127,7 @@ function PromocoesHome() {
     <AppLayout>
       <div className="space-y-5 px-4 py-5">
         {/* Header */}
-        <Card className="relative overflow-hidden rounded-3xl border-0 bg-gradient-promo p-5 shadow-elevated">
+        <Card className="relative overflow-hidden rounded-3xl border-0 bg-gradient-promo p-5 text-white shadow-elevated">
           <div className="absolute right-3 top-3 flex gap-2">
             <Link to="/promocoes/alertas" className="relative flex size-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur">
               <Bell className="size-4" />
@@ -146,7 +146,7 @@ function PromocoesHome() {
           ) : (
             <EconomyMeter value={economyToday} />
           )}
-          <p className="mt-2 text-xs text-primary-foreground/80">
+          <p className="mt-2 text-xs text-white/80">
             {myPromos.length > 0
               ? `${myPromos.length} ofertas dos seus panfletos`
               : "Cadastre um panfleto pra começar a economizar"}
@@ -192,8 +192,8 @@ function PromocoesHome() {
           </section>
         )}
 
-        {/* Acabando hoje */}
-        {!loading && endingToday.length > 0 && (
+        {/* Acabando hoje — só se o user tem panfletos */}
+        {!loading && flyers.length > 0 && endingToday.length > 0 && (
           <section>
             <div className="mb-2 flex items-center gap-1.5 px-1">
               <Clock className="size-4 text-[var(--promo-hot)]" />
@@ -207,23 +207,28 @@ function PromocoesHome() {
           </section>
         )}
 
-        {/* Recomendadas */}
-        <section>
-          <div className="mb-2 flex items-center gap-1.5 px-1">
-            <Sparkles className="size-4 text-primary" />
-            <h2 className="text-sm font-semibold">Recomendadas pra você</h2>
-          </div>
-          <div className="space-y-3">
-            {loading
-              ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)
-              : recommended.length === 0
-              ? null
-              : recommended.map((p) => <PromoCard key={p.id} promo={p} />)}
-          </div>
-        </section>
+        {/* Recomendadas — só se o user tem panfletos cadastrados */}
+        {!loading && flyers.length > 0 && recommended.length > 0 && (
+          <section>
+            <div className="mb-2 flex items-center gap-1.5 px-1">
+              <Sparkles className="size-4 text-primary" />
+              <h2 className="text-sm font-semibold">Recomendadas pra você</h2>
+            </div>
+            <div className="space-y-3">
+              {recommended.map((p) => <PromoCard key={p.id} promo={p} />)}
+            </div>
+          </section>
+        )}
 
-        {/* Mercados parceiros */}
-        {!loading && stores.length > 0 && (
+        {/* Loading skeleton inicial */}
+        {loading && (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}
+          </div>
+        )}
+
+        {/* Mercados parceiros — só se o user tem panfletos */}
+        {!loading && flyers.length > 0 && stores.length > 0 && (
           <section>
             <h2 className="mb-2 px-1 text-sm font-semibold">Mercados</h2>
             <div className="flex gap-2 overflow-x-auto pb-1">
