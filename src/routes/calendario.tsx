@@ -31,6 +31,7 @@ function CalendarPage() {
   const navigate = useNavigate();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [latestReceiptDate, setLatestReceiptDate] = useState<Date | null>(null);
   const [cursor, setCursor] = useState(() => {
     const n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), 1);
@@ -40,6 +41,19 @@ function CalendarPage() {
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/auth" });
   }, [user, authLoading, navigate]);
+
+  // Pega a data do cupom mais recente (uma vez) para sugerir navegação
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("receipts")
+        .select("purchased_at")
+        .order("purchased_at", { ascending: false })
+        .limit(1);
+      if (data?.[0]) setLatestReceiptDate(new Date(data[0].purchased_at));
+    })();
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
