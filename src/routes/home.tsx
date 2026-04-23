@@ -12,7 +12,7 @@ import { computeAchievements, type Achievement } from "@/lib/achievements";
 import {
   LogOut, Wallet, Store, ShoppingBasket, TrendingUp, TrendingDown, ArrowUp, ArrowDown,
   Sparkles, AlertTriangle, Trophy, Lightbulb, Target, Repeat, PiggyBank, Package, CalendarDays,
-  Plus, Award, Compass, Flame,
+  Plus, Award, Compass, Flame, PackageOpen, ChevronRight,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { toast } from "sonner";
@@ -20,13 +20,16 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Receipt = Database["public"]["Tables"]["receipts"]["Row"];
 type Item = Database["public"]["Tables"]["receipt_items"]["Row"];
+type Household = Database["public"]["Tables"]["household_profile"]["Row"];
 
 type Tip = { title: string; body: string; icon: "swap" | "alert" | "save" | "bulk" | "schedule" };
+type StockAlert = { product: string; days_left_estimate: number; reason: string };
 type Forecast = {
   forecast_month_total: number;
   forecast_confidence: "baixa" | "média" | "alta";
   forecast_explanation: string;
   tips: Tip[];
+  stock_alerts: StockAlert[];
 };
 
 export const Route = createFileRoute("/home")({
@@ -49,9 +52,11 @@ function HomePage() {
   const navigate = useNavigate();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [household, setHousehold] = useState<Household | null>(null);
   const [loading, setLoading] = useState(true);
   const [forecast, setForecast] = useState<Forecast | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
+  const [scope, setScope] = useState<"month" | "all">("month");
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/auth" });
@@ -61,12 +66,14 @@ function HomePage() {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [r, i] = await Promise.all([
+      const [r, i, h] = await Promise.all([
         supabase.from("receipts").select("*").order("purchased_at", { ascending: false }),
         supabase.from("receipt_items").select("*"),
+        supabase.from("household_profile").select("*").eq("user_id", user.id).maybeSingle(),
       ]);
       setReceipts(r.data ?? []);
       setItems(i.data ?? []);
+      setHousehold(h.data ?? null);
       setLoading(false);
     })();
   }, [user]);
@@ -83,35 +90,38 @@ function HomePage() {
       return d >= startPrev && d <= endPrev;
     });
 
+    // Escopo selecionado: mês atual OU todos os tempos
+    const scopeReceipts = scope === "month" ? monthReceipts : receipts;
+    const scopeIds = new Set(scopeReceipts.map((r) => r.id));
+    const scopeItems = items.filter((it) => scopeIds.has(it.receipt_id));
+
+    const totalScope = scopeReceipts.reduce((s, r) => s + Number(r.total_amount), 0);
     const totalMonth = monthReceipts.reduce((s, r) => s + Number(r.total_amount), 0);
     const totalPrev = prevMonthReceipts.reduce((s, r) => s + Number(r.total_amount), 0);
     const deltaPct = totalPrev > 0 ? ((totalMonth - totalPrev) / totalPrev) * 100 : null;
 
-    const monthIds = new Set(monthReceipts.map((r) => r.id));
-    const monthItems = items.filter((it) => monthIds.has(it.receipt_id));
-
     const storeMap = new Map<string, number>();
-    monthReceipts.forEach((r) => storeMap.set(r.store_name, (storeMap.get(r.store_name) ?? 0) + 1));
+    scopeReceipts.forEach((r) => storeMap.set(r.store_name, (storeMap.get(r.store_name) ?? 0) + 1));
     const topStore = [...storeMap.entries()].sort((a, b) => b[1] - a[1])[0];
 
     const productMap = new Map<string, number>();
-    monthItems.forEach((it) => {
+    scopeItems.forEach((it) => {
       const k = it.canonical_name || it.description;
       productMap.set(k, (productMap.get(k) ?? 0) + Number(it.quantity));
     });
     const topProduct = [...productMap.entries()].sort((a, b) => b[1] - a[1])[0];
 
-    const sortedByPrice = [...monthItems].sort((a, b) => Number(b.unit_price) - Number(a.unit_price));
+    const sortedByPrice = [...scopeItems].sort((a, b) => Number(b.unit_price) - Number(a.unit_price));
     const mostExpensive = sortedByPrice[0];
     const cheapest = sortedByPrice[sortedByPrice.length - 1];
 
     const catMap = new Map<string, number>();
-    monthItems.forEach((it) => catMap.set(it.category, (catMap.get(it.category) ?? 0) + Number(it.total_price)));
+    scopeItems.forEach((it) => catMap.set(it.category, (catMap.get(it.category) ?? 0) + Number(it.total_price)));
     const byCategory = [...catMap.entries()]
       .map(([k, v]) => ({ name: CATEGORY_LABELS[k] ?? k, value: Number(v.toFixed(2)) }))
       .sort((a, b) => b.value - a.value);
 
-    // Alertas: produtos cuja última compra subiu ≥10% vs. anterior
+    // Alertas de aumento: sempre considerando todos os itens (independente do escopo)
     const productHistory = new Map<string, { price: number; date: string }[]>();
     items.forEach((it) => {
       const k = (it.canonical_name || it.description).toLowerCase();
@@ -130,16 +140,19 @@ function HomePage() {
       }
     });
 
-    // Pace do mês para estimativa local (fallback antes da IA)
     const dayOfMonth = now.getDate();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const pace = dayOfMonth > 0 ? (totalMonth / dayOfMonth) * daysInMonth : 0;
 
+    const latestReceiptDate = receipts[0] ? new Date(receipts[0].purchased_at) : null;
+    const totalAllTime = receipts.reduce((s, r) => s + Number(r.total_amount), 0);
+
     return {
-      totalMonth, totalPrev, deltaPct, topStore, topProduct, mostExpensive, cheapest,
-      byCategory, monthCount: monthReceipts.length, alerts, pace, dayOfMonth, daysInMonth,
+      totalScope, totalMonth, totalPrev, totalAllTime, deltaPct, topStore, topProduct, mostExpensive, cheapest,
+      byCategory, monthCount: monthReceipts.length, scopeCount: scopeReceipts.length,
+      alerts, pace, dayOfMonth, daysInMonth, latestReceiptDate,
     };
-  }, [receipts, items]);
+  }, [receipts, items, scope]);
 
   const achievements = useMemo<Achievement[]>(() => {
     const uniqueStores = new Set(receipts.map((r) => r.store_name)).size;
@@ -171,19 +184,44 @@ function HomePage() {
         top_lojas: insights.topStore ? [{ nome: insights.topStore[0], visitas: insights.topStore[1] }] : [],
         gastos_por_categoria: insights.byCategory,
         alertas_aumento: insights.alerts.slice(0, 5),
+        compras_recentes: items
+          .slice()
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 30)
+          .map((it) => ({
+            produto: it.canonical_name || it.description,
+            categoria: it.category,
+            quantidade: Number(it.quantity),
+            comprado_em: it.created_at,
+          })),
       };
 
-      const { data, error } = await supabase.functions.invoke("insights-ai", { body: { summary } });
+      const householdPayload = household
+        ? {
+            adultos: household.adults,
+            criancas: household.children,
+            pets: household.pets,
+            renda_faixa: household.income_range,
+            orcamento_mercado: household.monthly_grocery_budget,
+            restricoes: household.restrictions,
+            mercados_favoritos: household.favorite_stores,
+            frequencia_compras: household.shopping_frequency,
+            pagamento_preferido: household.preferred_payment_method,
+          }
+        : null;
+
+      const { data, error } = await supabase.functions.invoke("insights-ai", {
+        body: { summary, household: householdPayload },
+      });
       if (error) {
         if (error.message?.includes("429")) toast.error("Muitas requisições. Aguarde alguns segundos.");
         else if (error.message?.includes("402")) toast.error("Sem créditos na Lovable AI.");
-        // Falha silenciosa — usamos pace local como fallback no UI
       } else if (data && !data.error) {
         setForecast(data as Forecast);
       }
       setForecastLoading(false);
     })();
-  }, [user, loading, receipts.length, insights, forecast, forecastLoading]);
+  }, [user, loading, receipts.length, insights, forecast, forecastLoading, household, items]);
 
   if (authLoading || !user) {
     return (
@@ -195,6 +233,12 @@ function HomePage() {
 
   const forecastTotal = forecast?.forecast_month_total ?? insights.pace;
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const heroTitle = scope === "month" ? "Seus gastos este mês" : "Total acumulado";
+  const heroValue = scope === "month" ? insights.totalMonth : insights.totalAllTime;
+  const heroCount = scope === "month" ? insights.monthCount : receipts.length;
+  const showOnboardingBanner = !loading && !!user && !household?.onboarding_completed_at && receipts.length > 0;
+  const noReceiptsAtAll = !loading && receipts.length === 0;
+  const onlyOldReceipts = !loading && receipts.length > 0 && insights.monthCount === 0;
 
   return (
     <AppLayout>
@@ -202,19 +246,44 @@ function HomePage() {
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
             <p className="text-xs uppercase tracking-wider opacity-80">Olá!</p>
-            <h1 className="mt-1 text-2xl font-bold">Seus gastos este mês</h1>
-            <p className="mt-3 text-4xl font-bold tabular-nums">{formatBRL(insights.totalMonth)}</p>
-            {insights.deltaPct !== null && (
-              <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-xs font-medium">
-                {insights.deltaPct >= 0 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
-                {Math.abs(insights.deltaPct).toFixed(1)}% vs. mês anterior
-              </div>
-            )}
+            <h1 className="mt-1 text-2xl font-bold">{heroTitle}</h1>
+            <p className="mt-3 text-4xl font-bold tabular-nums">{formatBRL(heroValue)}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {scope === "month" && insights.deltaPct !== null && (
+                <div className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-xs font-medium">
+                  {insights.deltaPct >= 0 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
+                  {Math.abs(insights.deltaPct).toFixed(1)}% vs. mês anterior
+                </div>
+              )}
+              {scope === "all" && (
+                <div className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-xs font-medium">
+                  {receipts.length} {receipts.length === 1 ? "cupom" : "cupons"}
+                </div>
+              )}
+            </div>
           </div>
           <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/15">
             <LogOut className="size-5" />
           </Button>
         </div>
+
+        {/* Toggle escopo */}
+        {receipts.length > 0 && (
+          <div className="mt-5 inline-flex rounded-full bg-primary-foreground/15 p-1 text-xs font-semibold">
+            <button
+              onClick={() => setScope("month")}
+              className={`rounded-full px-4 py-1.5 transition-all ${scope === "month" ? "bg-primary-foreground text-primary shadow" : "text-primary-foreground/80"}`}
+            >
+              Este mês
+            </button>
+            <button
+              onClick={() => setScope("all")}
+              className={`rounded-full px-4 py-1.5 transition-all ${scope === "all" ? "bg-primary-foreground text-primary shadow" : "text-primary-foreground/80"}`}
+            >
+              Todos os tempos
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="space-y-3 px-4 py-5">
@@ -224,12 +293,12 @@ function HomePage() {
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-48 w-full" />
           </>
-        ) : insights.monthCount === 0 ? (
+        ) : noReceiptsAtAll ? (
           <Card className="p-8 text-center shadow-card">
             <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-muted">
               <Wallet className="size-7 text-muted-foreground" />
             </div>
-            <h2 className="text-base font-semibold">Sem cupons este mês</h2>
+            <h2 className="text-base font-semibold">Tudo pronto para começar</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Tire a foto do seu primeiro cupom para começar a ver insights.
             </p>
@@ -239,6 +308,46 @@ function HomePage() {
           </Card>
         ) : (
           <>
+            {/* Banner: convidar a completar onboarding */}
+            {showOnboardingBanner && (
+              <button
+                onClick={() => navigate({ to: "/onboarding" })}
+                className="flex w-full items-center gap-3 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 to-accent/30 p-4 text-left shadow-card transition-all hover:shadow-elevated"
+              >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
+                  <Sparkles className="size-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">Personalize seus insights</p>
+                  <p className="text-xs text-muted-foreground">Conte sobre sua casa em 1 minuto.</p>
+                </div>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+              </button>
+            )}
+
+            {/* Aviso: sem cupons este mês mas existem antigos */}
+            {onlyOldReceipts && scope === "month" && (
+              <Card className="border-dashed border-primary/40 bg-primary/5 p-4 shadow-card">
+                <div className="flex items-start gap-3">
+                  <CalendarDays className="size-4 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">Sem cupons este mês</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Você tem {receipts.length} {receipts.length === 1 ? "cupom" : "cupons"} em outros períodos.
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => setScope("all")} className="h-8 text-xs">
+                        Ver todos
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => navigate({ to: "/calendario" })} className="h-8 text-xs">
+                        Abrir calendário
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* Atalhos rápidos */}
             <div className="grid grid-cols-3 gap-2">
               <ShortcutCard to="/calendario" icon={CalendarDays} label="Calendário" />
@@ -299,7 +408,33 @@ function HomePage() {
               </Card>
             )}
 
-            {/* Alertas de aumento */}
+            {/* Alertas de estoque IA — Fase 4+ */}
+            {forecast && forecast.stock_alerts && forecast.stock_alerts.length > 0 && (
+              <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5 p-5 shadow-card">
+                <div className="flex items-center gap-2">
+                  <PackageOpen className="size-4 text-primary" />
+                  <h3 className="text-sm font-semibold">Provável baixa de estoque</h3>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Estimativa baseada em {household ? `sua casa (${household.adults + household.children} pessoas)` : "seu padrão de consumo"}.
+                </p>
+                <div className="mt-3 space-y-2">
+                  {forecast.stock_alerts.map((s, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-xl bg-muted/40 p-3">
+                      <div className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <span className="text-sm font-bold leading-none tabular-nums">{Math.max(0, Math.round(s.days_left_estimate))}</span>
+                        <span className="text-[8px] font-medium uppercase leading-none">dias</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-semibold">{s.product}</p>
+                        <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground leading-snug">{s.reason}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
             {insights.alerts.length > 0 && (
               <Card className="border-warning/40 bg-warning/10 p-4 shadow-card">
                 <div className="flex items-center gap-2">

@@ -204,7 +204,19 @@ function AddReceiptPage() {
       }
 
       toast.success("Cupom salvo com sucesso!");
-      navigate({ to: "/cupons/$id", params: { id: receipt.id } });
+
+      // Após o primeiro cupom, dispara onboarding (se ainda não completou)
+      const { data: prof } = await supabase
+        .from("household_profile")
+        .select("onboarding_completed_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!prof?.onboarding_completed_at) {
+        navigate({ to: "/onboarding" });
+      } else {
+        navigate({ to: "/cupons/$id", params: { id: receipt.id } });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao salvar";
       toast.error(msg);

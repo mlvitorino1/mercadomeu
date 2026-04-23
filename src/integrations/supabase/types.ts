@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      household_profile: {
+        Row: {
+          adults: number
+          children: number
+          created_at: string
+          favorite_brands: string[]
+          favorite_stores: string[]
+          id: string
+          income_range: string | null
+          monthly_grocery_budget: number | null
+          onboarding_completed_at: string | null
+          pets: number
+          preferred_payment_method: string | null
+          preferred_shopping_day: string | null
+          restrictions: string[]
+          shopping_frequency: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adults?: number
+          children?: number
+          created_at?: string
+          favorite_brands?: string[]
+          favorite_stores?: string[]
+          id?: string
+          income_range?: string | null
+          monthly_grocery_budget?: number | null
+          onboarding_completed_at?: string | null
+          pets?: number
+          preferred_payment_method?: string | null
+          preferred_shopping_day?: string | null
+          restrictions?: string[]
+          shopping_frequency?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adults?: number
+          children?: number
+          created_at?: string
+          favorite_brands?: string[]
+          favorite_stores?: string[]
+          id?: string
+          income_range?: string | null
+          monthly_grocery_budget?: number | null
+          onboarding_completed_at?: string | null
+          pets?: number
+          preferred_payment_method?: string | null
+          preferred_shopping_day?: string | null
+          restrictions?: string[]
+          shopping_frequency?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           canonical_name: string
