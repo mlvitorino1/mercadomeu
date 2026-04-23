@@ -271,14 +271,6 @@ function ListaPage() {
     }
   }
 
-  if (authLoading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Skeleton className="h-32 w-72" />
-      </div>
-    );
-  }
-
   const grouped = useMemo(() => {
     const map = new Map<string, ListItem[]>();
     list.forEach((it) => {
@@ -291,6 +283,14 @@ function ListaPage() {
   }, [list]);
 
   const checkedCount = list.filter((l) => l.checked).length;
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Skeleton className="h-32 w-72" />
+      </div>
+    );
+  }
 
   return (
     <AppLayout>
