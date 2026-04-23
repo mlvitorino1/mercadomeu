@@ -15,6 +15,7 @@ import { CATEGORY_LABELS } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
+import { hashInputs, readCache, writeCache, clearCache, slugify, formatRelativeTime } from "@/lib/insights-cache";
 
 type Item = Database["public"]["Tables"]["receipt_items"]["Row"];
 type Receipt = Database["public"]["Tables"]["receipts"]["Row"];
@@ -28,6 +29,17 @@ type ListItem = {
   source: "stock" | "frequent" | "manual";
   reason?: string;
   checked: boolean;
+  /** Marcador de edição manual: se true, o merge não substitui/remove esse item. */
+  edited?: boolean;
+};
+
+type StockPayload = {
+  stock_alerts?: Array<{
+    product: string;
+    category: string;
+    days_left_estimate: number;
+    reason: string;
+  }>;
 };
 
 export const Route = createFileRoute("/lista")({
@@ -51,6 +63,7 @@ function ListaPage() {
   const [list, setList] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [newItem, setNewItem] = useState("");
 
   useEffect(() => {
@@ -105,62 +118,134 @@ function ListaPage() {
       .sort((a, b) => b.count - a.count);
   }, [items]);
 
-  async function generateSmartList() {
+  /**
+   * Merge estável: combina nova fonte (stock + frequent) com itens existentes.
+   * - Mantém itens marcados (checked) e quantidades editadas.
+   * - IDs determinísticos por slug → atualiza no lugar.
+   * - Itens manuais são preservados intactos.
+   * - Itens da fonte que sumiram são removidos APENAS se não foram editados.
+   */
+  function mergeList(current: ListItem[], fresh: ListItem[]): ListItem[] {
+    const currentById = new Map(current.map((it) => [it.id, it]));
+    const freshById = new Map(fresh.map((it) => [it.id, it]));
+    const result: ListItem[] = [];
+
+    // 1) Itens novos da fonte: atualiza se já existe (preservando estado), senão adiciona.
+    for (const f of fresh) {
+      const existing = currentById.get(f.id);
+      if (existing) {
+        result.push({
+          ...f,
+          quantity: existing.edited ? existing.quantity : f.quantity,
+          checked: existing.checked,
+          edited: existing.edited,
+        });
+      } else {
+        result.push(f);
+      }
+    }
+
+    // 2) Itens atuais que não vêm da fonte: mantém manuais e mantém qualquer item editado.
+    for (const c of current) {
+      if (freshById.has(c.id)) continue;
+      if (c.source === "manual" || c.edited) result.push(c);
+    }
+    return result;
+  }
+
+  async function generateSmartList(force = false) {
     if (!user || generating) return;
     setGenerating(true);
 
-    const summary = {
-      compras_recentes: items
-        .slice()
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 60)
-        .map((it) => ({
-          produto: it.canonical_name || it.description,
-          categoria: it.category,
-          quantidade: Number(it.quantity),
-          comprado_em: it.created_at,
-        })),
-      mes_atual: { gasto_atual: 0, dia_do_mes: new Date().getDate(), dias_no_mes: 30, cupons: receipts.length, ritmo_estimado: 0 },
-      mes_anterior: { gasto_total: 0 },
-      top_produtos: frequentProducts.slice(0, 5).map((p) => ({ nome: p.name, quantidade: p.count })),
-      top_lojas: [],
-      gastos_por_categoria: [],
-      alertas_aumento: [],
+    // Hash determinístico (alinhado com Home, mas pra kind='stock')
+    const topProductsForHash = frequentProducts.slice(0, 10).map((p) => ({
+      name: p.name.toLowerCase(),
+      qty: Math.round(p.count),
+    }));
+    const hashInput = {
+      kind: "stock",
+      topProducts: topProductsForHash,
+      household: household
+        ? {
+            adults: household.adults,
+            children: household.children,
+            pets: household.pets,
+            restrictions: [...(household.restrictions ?? [])].sort(),
+          }
+        : null,
     };
+    const inputHash = await hashInputs(hashInput);
 
-    const householdPayload = household
-      ? {
-          adultos: household.adults,
-          criancas: household.children,
-          pets: household.pets,
-          renda_faixa: household.income_range,
-          orcamento_mercado: household.monthly_grocery_budget,
-          restricoes: household.restrictions,
-          mercados_favoritos: household.favorite_stores,
-          frequencia_compras: household.shopping_frequency,
-          pagamento_preferido: household.preferred_payment_method,
-        }
-      : null;
+    let stockAlerts: Array<{ product: string; category: string; days_left_estimate: number; reason: string }> = [];
 
-    const { data, error } = await supabase.functions.invoke("insights-ai", {
-      body: { summary, household: householdPayload },
-    });
-
-    if (error || data?.error) {
-      toast.error("Não consegui gerar agora.");
-      setGenerating(false);
-      return;
+    // Tenta cache primeiro (a menos que seja refresh forçado)
+    if (!force) {
+      const cached = await readCache<StockPayload>(user.id, "stock", inputHash);
+      if (cached) {
+        stockAlerts = cached.payload.stock_alerts ?? [];
+        setLastGeneratedAt(cached.generatedAt);
+      }
+    } else {
+      await clearCache(user.id, "stock");
     }
 
-    const stockAlerts = (data?.stock_alerts ?? []) as Array<{
-      product: string;
-      category: string;
-      days_left_estimate: number;
-      reason: string;
-    }>;
+    // Se não achou no cache, chama a IA
+    if (stockAlerts.length === 0 && !force) {
+      // ainda assim, se cache existia mas era vazio, segue o fluxo normal
+    }
+    if (force || (await readCache<StockPayload>(user.id, "stock", inputHash)) === null) {
+      const summary = {
+        compras_recentes: items
+          .slice()
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 60)
+          .map((it) => ({
+            produto: it.canonical_name || it.description,
+            categoria: it.category,
+            quantidade: Number(it.quantity),
+            comprado_em: it.created_at,
+          })),
+        mes_atual: { gasto_atual: 0, dia_do_mes: new Date().getDate(), dias_no_mes: 30, cupons: receipts.length, ritmo_estimado: 0 },
+        mes_anterior: { gasto_total: 0 },
+        top_produtos: frequentProducts.slice(0, 5).map((p) => ({ nome: p.name, quantidade: p.count })),
+        top_lojas: [],
+        gastos_por_categoria: [],
+        alertas_aumento: [],
+      };
 
+      const householdPayload = household
+        ? {
+            adultos: household.adults,
+            criancas: household.children,
+            pets: household.pets,
+            renda_faixa: household.income_range,
+            orcamento_mercado: household.monthly_grocery_budget,
+            restricoes: household.restrictions,
+            mercados_favoritos: household.favorite_stores,
+            frequencia_compras: household.shopping_frequency,
+            pagamento_preferido: household.preferred_payment_method,
+          }
+        : null;
+
+      const { data, error } = await supabase.functions.invoke("insights-ai", {
+        body: { summary, household: householdPayload },
+      });
+
+      if (error || data?.error) {
+        toast.error("Não consegui gerar agora.");
+        setGenerating(false);
+        return;
+      }
+
+      stockAlerts = (data?.stock_alerts ?? []) as typeof stockAlerts;
+      const now = new Date().toISOString();
+      setLastGeneratedAt(now);
+      await writeCache<StockPayload>(user.id, "stock", inputHash, { stock_alerts: stockAlerts });
+    }
+
+    // Constrói nova fonte com IDs determinísticos
     const fromStock: ListItem[] = stockAlerts.map((a) => ({
-      id: `stock-${a.product}-${Date.now()}-${Math.random()}`,
+      id: `stock-${slugify(a.product)}`,
       name: a.product,
       category: a.category || "outros",
       quantity: 1,
@@ -169,13 +254,12 @@ function ListaPage() {
       checked: false,
     }));
 
-    // completa com produtos frequentes ainda não inclusos
-    const stockNames = new Set(fromStock.map((s) => s.name.toLowerCase()));
+    const stockSlugs = new Set(fromStock.map((s) => slugify(s.name)));
     const fromFrequent: ListItem[] = frequentProducts
-      .filter((p) => !stockNames.has(p.name.toLowerCase()))
+      .filter((p) => !stockSlugs.has(slugify(p.name)))
       .slice(0, 6)
       .map((p) => ({
-        id: `freq-${p.name}-${Date.now()}-${Math.random()}`,
+        id: `freq-${slugify(p.name)}`,
         name: p.name,
         category: p.category,
         quantity: 1,
@@ -184,9 +268,7 @@ function ListaPage() {
         checked: false,
       }));
 
-    // mantém itens manuais existentes
-    const manuals = list.filter((l) => l.source === "manual");
-    setList([...fromStock, ...fromFrequent, ...manuals]);
+    setList((current) => mergeList(current, [...fromStock, ...fromFrequent]));
     setGenerating(false);
     toast.success("Lista atualizada!");
   }
@@ -194,23 +276,35 @@ function ListaPage() {
   function addManual() {
     const name = newItem.trim();
     if (!name) return;
+    const id = `manual-${slugify(name)}-${Date.now().toString(36)}`;
     setList((l) => [
       ...l,
       {
-        id: `m-${Date.now()}`,
+        id,
         name,
         category: "outros",
         quantity: 1,
         source: "manual",
         checked: false,
+        edited: true,
       },
     ]);
     setNewItem("");
   }
 
   function updateItem(id: string, patch: Partial<ListItem>) {
-    setList((l) => l.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+    setList((l) =>
+      l.map((it) => {
+        if (it.id !== id) return it;
+        // Mudou quantidade ou nome → marca como editado (preserva no merge)
+        const isEdit =
+          (patch.quantity !== undefined && patch.quantity !== it.quantity) ||
+          (patch.name !== undefined && patch.name !== it.name);
+        return { ...it, ...patch, edited: it.edited || isEdit };
+      }),
+    );
   }
+
 
   function removeItem(id: string) {
     setList((l) => l.filter((it) => it.id !== id));
@@ -315,7 +409,7 @@ function ListaPage() {
       <div className="space-y-3 px-4 py-5">
         {/* Gerar com IA */}
         <Button
-          onClick={generateSmartList}
+          onClick={() => generateSmartList(list.length > 0)}
           disabled={generating || loading || items.length === 0}
           className="w-full bg-gradient-primary text-base font-semibold shadow-elevated"
           size="lg"
@@ -356,6 +450,11 @@ function ListaPage() {
         {/* Lista */}
         {list.length > 0 && (
           <>
+            {lastGeneratedAt && (
+              <p className="px-1 text-[10px] text-muted-foreground">
+                Última geração {formatRelativeTime(lastGeneratedAt)} · {list.filter((l) => l.source !== "manual").length} da IA, {list.filter((l) => l.source === "manual").length} {list.filter((l) => l.source === "manual").length === 1 ? "manual" : "manuais"}
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={copyList} className="h-8 text-xs">
                 <Copy className="size-3.5" /> Copiar
