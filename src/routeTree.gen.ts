@@ -17,10 +17,17 @@ import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdicionarRouteImport } from './routes/adicionar'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PromocoesIndexRouteImport } from './routes/promocoes.index'
 import { Route as ProdutosIndexRouteImport } from './routes/produtos.index'
 import { Route as CuponsIndexRouteImport } from './routes/cupons.index'
+import { Route as PromocoesFavoritosRouteImport } from './routes/promocoes.favoritos'
+import { Route as PromocoesExplorarRouteImport } from './routes/promocoes.explorar'
+import { Route as PromocoesCestaRouteImport } from './routes/promocoes.cesta'
+import { Route as PromocoesAlertasRouteImport } from './routes/promocoes.alertas'
 import { Route as ProdutosIdRouteImport } from './routes/produtos.$id'
 import { Route as CuponsIdRouteImport } from './routes/cupons.$id'
+import { Route as PromocoesProdutoIdRouteImport } from './routes/promocoes.produto.$id'
+import { Route as PromocoesMercadoIdRouteImport } from './routes/promocoes.mercado.$id'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -62,6 +69,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PromocoesIndexRoute = PromocoesIndexRouteImport.update({
+  id: '/promocoes/',
+  path: '/promocoes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProdutosIndexRoute = ProdutosIndexRouteImport.update({
   id: '/produtos/',
   path: '/produtos/',
@@ -72,6 +84,26 @@ const CuponsIndexRoute = CuponsIndexRouteImport.update({
   path: '/cupons/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PromocoesFavoritosRoute = PromocoesFavoritosRouteImport.update({
+  id: '/promocoes/favoritos',
+  path: '/promocoes/favoritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PromocoesExplorarRoute = PromocoesExplorarRouteImport.update({
+  id: '/promocoes/explorar',
+  path: '/promocoes/explorar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PromocoesCestaRoute = PromocoesCestaRouteImport.update({
+  id: '/promocoes/cesta',
+  path: '/promocoes/cesta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PromocoesAlertasRoute = PromocoesAlertasRouteImport.update({
+  id: '/promocoes/alertas',
+  path: '/promocoes/alertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProdutosIdRoute = ProdutosIdRouteImport.update({
   id: '/produtos/$id',
   path: '/produtos/$id',
@@ -80,6 +112,16 @@ const ProdutosIdRoute = ProdutosIdRouteImport.update({
 const CuponsIdRoute = CuponsIdRouteImport.update({
   id: '/cupons/$id',
   path: '/cupons/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PromocoesProdutoIdRoute = PromocoesProdutoIdRouteImport.update({
+  id: '/promocoes/produto/$id',
+  path: '/promocoes/produto/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PromocoesMercadoIdRoute = PromocoesMercadoIdRouteImport.update({
+  id: '/promocoes/mercado/$id',
+  path: '/promocoes/mercado/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -94,8 +136,15 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
+  '/promocoes/alertas': typeof PromocoesAlertasRoute
+  '/promocoes/cesta': typeof PromocoesCestaRoute
+  '/promocoes/explorar': typeof PromocoesExplorarRoute
+  '/promocoes/favoritos': typeof PromocoesFavoritosRoute
   '/cupons/': typeof CuponsIndexRoute
   '/produtos/': typeof ProdutosIndexRoute
+  '/promocoes/': typeof PromocoesIndexRoute
+  '/promocoes/mercado/$id': typeof PromocoesMercadoIdRoute
+  '/promocoes/produto/$id': typeof PromocoesProdutoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -108,8 +157,15 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
+  '/promocoes/alertas': typeof PromocoesAlertasRoute
+  '/promocoes/cesta': typeof PromocoesCestaRoute
+  '/promocoes/explorar': typeof PromocoesExplorarRoute
+  '/promocoes/favoritos': typeof PromocoesFavoritosRoute
   '/cupons': typeof CuponsIndexRoute
   '/produtos': typeof ProdutosIndexRoute
+  '/promocoes': typeof PromocoesIndexRoute
+  '/promocoes/mercado/$id': typeof PromocoesMercadoIdRoute
+  '/promocoes/produto/$id': typeof PromocoesProdutoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,8 +179,15 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
+  '/promocoes/alertas': typeof PromocoesAlertasRoute
+  '/promocoes/cesta': typeof PromocoesCestaRoute
+  '/promocoes/explorar': typeof PromocoesExplorarRoute
+  '/promocoes/favoritos': typeof PromocoesFavoritosRoute
   '/cupons/': typeof CuponsIndexRoute
   '/produtos/': typeof ProdutosIndexRoute
+  '/promocoes/': typeof PromocoesIndexRoute
+  '/promocoes/mercado/$id': typeof PromocoesMercadoIdRoute
+  '/promocoes/produto/$id': typeof PromocoesProdutoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,8 +202,15 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
+    | '/promocoes/alertas'
+    | '/promocoes/cesta'
+    | '/promocoes/explorar'
+    | '/promocoes/favoritos'
     | '/cupons/'
     | '/produtos/'
+    | '/promocoes/'
+    | '/promocoes/mercado/$id'
+    | '/promocoes/produto/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -153,8 +223,15 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
+    | '/promocoes/alertas'
+    | '/promocoes/cesta'
+    | '/promocoes/explorar'
+    | '/promocoes/favoritos'
     | '/cupons'
     | '/produtos'
+    | '/promocoes'
+    | '/promocoes/mercado/$id'
+    | '/promocoes/produto/$id'
   id:
     | '__root__'
     | '/'
@@ -167,8 +244,15 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
+    | '/promocoes/alertas'
+    | '/promocoes/cesta'
+    | '/promocoes/explorar'
+    | '/promocoes/favoritos'
     | '/cupons/'
     | '/produtos/'
+    | '/promocoes/'
+    | '/promocoes/mercado/$id'
+    | '/promocoes/produto/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -182,8 +266,15 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   CuponsIdRoute: typeof CuponsIdRoute
   ProdutosIdRoute: typeof ProdutosIdRoute
+  PromocoesAlertasRoute: typeof PromocoesAlertasRoute
+  PromocoesCestaRoute: typeof PromocoesCestaRoute
+  PromocoesExplorarRoute: typeof PromocoesExplorarRoute
+  PromocoesFavoritosRoute: typeof PromocoesFavoritosRoute
   CuponsIndexRoute: typeof CuponsIndexRoute
   ProdutosIndexRoute: typeof ProdutosIndexRoute
+  PromocoesIndexRoute: typeof PromocoesIndexRoute
+  PromocoesMercadoIdRoute: typeof PromocoesMercadoIdRoute
+  PromocoesProdutoIdRoute: typeof PromocoesProdutoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -244,6 +335,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/promocoes/': {
+      id: '/promocoes/'
+      path: '/promocoes'
+      fullPath: '/promocoes/'
+      preLoaderRoute: typeof PromocoesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/produtos/': {
       id: '/produtos/'
       path: '/produtos'
@@ -256,6 +354,34 @@ declare module '@tanstack/react-router' {
       path: '/cupons'
       fullPath: '/cupons/'
       preLoaderRoute: typeof CuponsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/promocoes/favoritos': {
+      id: '/promocoes/favoritos'
+      path: '/promocoes/favoritos'
+      fullPath: '/promocoes/favoritos'
+      preLoaderRoute: typeof PromocoesFavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/promocoes/explorar': {
+      id: '/promocoes/explorar'
+      path: '/promocoes/explorar'
+      fullPath: '/promocoes/explorar'
+      preLoaderRoute: typeof PromocoesExplorarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/promocoes/cesta': {
+      id: '/promocoes/cesta'
+      path: '/promocoes/cesta'
+      fullPath: '/promocoes/cesta'
+      preLoaderRoute: typeof PromocoesCestaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/promocoes/alertas': {
+      id: '/promocoes/alertas'
+      path: '/promocoes/alertas'
+      fullPath: '/promocoes/alertas'
+      preLoaderRoute: typeof PromocoesAlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produtos/$id': {
@@ -272,6 +398,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CuponsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/promocoes/produto/$id': {
+      id: '/promocoes/produto/$id'
+      path: '/promocoes/produto/$id'
+      fullPath: '/promocoes/produto/$id'
+      preLoaderRoute: typeof PromocoesProdutoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/promocoes/mercado/$id': {
+      id: '/promocoes/mercado/$id'
+      path: '/promocoes/mercado/$id'
+      fullPath: '/promocoes/mercado/$id'
+      preLoaderRoute: typeof PromocoesMercadoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -286,8 +426,15 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   CuponsIdRoute: CuponsIdRoute,
   ProdutosIdRoute: ProdutosIdRoute,
+  PromocoesAlertasRoute: PromocoesAlertasRoute,
+  PromocoesCestaRoute: PromocoesCestaRoute,
+  PromocoesExplorarRoute: PromocoesExplorarRoute,
+  PromocoesFavoritosRoute: PromocoesFavoritosRoute,
   CuponsIndexRoute: CuponsIndexRoute,
   ProdutosIndexRoute: ProdutosIndexRoute,
+  PromocoesIndexRoute: PromocoesIndexRoute,
+  PromocoesMercadoIdRoute: PromocoesMercadoIdRoute,
+  PromocoesProdutoIdRoute: PromocoesProdutoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
