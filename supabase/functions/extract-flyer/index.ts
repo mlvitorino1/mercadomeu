@@ -313,7 +313,7 @@ serve(async (req) => {
         price, original_price: original,
         ends_at: endsAtIso,
         starts_at: new Date().toISOString(),
-        status: "ativa", source: "flyer", stock_level: "alto",
+        status: "ativa", source: "scraper", stock_level: "alto",
         user_id: f.user_id, flyer_id: f.id,
       });
       if (!promErr) {
