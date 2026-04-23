@@ -325,15 +325,6 @@ serve(async (req) => {
       }
     }
     console.log(`extract-flyer: items=${items.length} inserted=${inserted} errors=${insertErrors} lastError=${lastInsertError}`);
-      if (!promErr) {
-        inserted++;
-      } else {
-        insertErrors++;
-        lastInsertError = promErr.message;
-        console.error("promotion insert error:", promErr.message, { product_id: productId, store_id: storeId, price, ends_at: endsAtIso });
-      }
-    }
-    console.log(`extract-flyer: items=${items.length} inserted=${inserted} errors=${insertErrors} lastError=${lastInsertError}`);
 
     await setStatus(sb, f.id, "ready", {
       extracted_count: inserted,
