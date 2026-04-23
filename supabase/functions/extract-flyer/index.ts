@@ -89,6 +89,7 @@ type Flyer = {
   source_kind: "html_url" | "file_url" | "upload_pdf" | "upload_image";
   source_url: string | null;
   storage_path: string | null;
+  storage_paths: string[] | null;
   store_id: string | null;
   store_name_guess: string | null;
 };
@@ -199,9 +200,15 @@ serve(async (req) => {
       const dataUrl = await fileUrlToDataUrl(f.source_url);
       imageDataUrls.push(dataUrl);
       detectedTitle = f.source_url;
-    } else if ((f.source_kind === "upload_pdf" || f.source_kind === "upload_image") && f.storage_path) {
-      const dataUrl = await storageToDataUrl(sb, f.storage_path);
-      imageDataUrls.push(dataUrl);
+    } else if (f.source_kind === "upload_pdf" || f.source_kind === "upload_image") {
+      const paths = (f.storage_paths && f.storage_paths.length > 0)
+        ? f.storage_paths
+        : (f.storage_path ? [f.storage_path] : []);
+      if (paths.length === 0) throw new Error("nenhum arquivo");
+      for (const p of paths) {
+        const dataUrl = await storageToDataUrl(sb, p);
+        imageDataUrls.push(dataUrl);
+      }
     } else {
       throw new Error("source inválida");
     }
@@ -261,8 +268,20 @@ serve(async (req) => {
     const catMap = new Map<string, string>();
     for (const c of (cats ?? []) as Array<{ id: string; slug: string }>) catMap.set(c.slug, c.id);
 
-    // 5) Default ends_at
-    const defaultEnds = result.valid_until ?? new Date(Date.now() + 7 * 86400000).toISOString();
+    // 5) Default ends_at — end of today if AI didn't return a valid future date
+    function endOfToday(): string {
+      const d = new Date();
+      d.setHours(23, 59, 59, 999);
+      return d.toISOString();
+    }
+    let defaultEnds = endOfToday();
+    if (result.valid_until && typeof result.valid_until === "string") {
+      const raw = result.valid_until;
+      const parsed = new Date(raw.length === 10 ? `${raw}T23:59:59Z` : raw);
+      if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+        defaultEnds = parsed.toISOString();
+      }
+    }
 
     let inserted = 0;
     let insertErrors = 0;

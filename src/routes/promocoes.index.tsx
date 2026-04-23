@@ -18,6 +18,8 @@ import {
 import { Bell, Heart, Plus, Sparkles, Tag, Clock, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/promocoes/")({
   head: () => ({
@@ -33,7 +35,10 @@ type FlyerRow = {
   id: string; status: FlyerStatus; source_kind: string;
   store_id: string | null; extracted_count: number;
   created_at: string; error_message: string | null;
+  valid_until: string | null;
 };
+
+type FlyerChip = FlyerHistoryRow & { valid_until: string | null };
 
 function PromocoesHome() {
   const { user, loading: authLoading } = useAuth();
@@ -42,7 +47,7 @@ function PromocoesHome() {
   const [ranked, setRanked] = useState<RankedPromo[]>([]);
   const [stores, setStores] = useState<Array<{ id: string; chain: string; name: string; logo_emoji: string; brand_color: string }>>([]);
   const [unreadAlerts, setUnreadAlerts] = useState(0);
-  const [flyers, setFlyers] = useState<FlyerHistoryRow[]>([]);
+  const [flyers, setFlyers] = useState<FlyerChip[]>([]);
   const [myPromoIds, setMyPromoIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -56,7 +61,7 @@ function PromocoesHome() {
       fetchActivePromotions(),
       fetchUserContext(user.id),
       supabase.from("promo_notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null),
-      supabase.from("promo_flyers").select("id, status, source_kind, store_id, extracted_count, created_at, error_message")
+      supabase.from("promo_flyers").select("id, status, source_kind, store_id, extracted_count, created_at, error_message, valid_until")
         .eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
       supabase.from("promotions").select("id").eq("user_id", user.id),
     ]);
@@ -78,7 +83,7 @@ function PromocoesHome() {
 
     // enrich flyers with store names
     const rawFlyers = (flyersRes.data ?? []) as FlyerRow[];
-    const enriched: FlyerHistoryRow[] = rawFlyers.map((f) => ({
+    const enriched: FlyerChip[] = rawFlyers.map((f) => ({
       ...f, store_name: f.store_id ? data.stores.get(f.store_id)?.name ?? null : null,
     }));
     setFlyers(enriched);
@@ -98,9 +103,9 @@ function PromocoesHome() {
   const myPromos = useMemo(() => ranked.filter((p) => myPromoIds.has(p.id)), [ranked, myPromoIds]);
   const endingToday = useMemo(() => {
     const end = Date.now() + 24 * 3600 * 1000;
-    return ranked.filter((p) => new Date(p.ends_at).getTime() <= end).slice(0, 6);
-  }, [ranked]);
-  const recommended = useMemo(() => ranked.slice(0, 8), [ranked]);
+    return myPromos.filter((p) => new Date(p.ends_at).getTime() <= end).slice(0, 6);
+  }, [myPromos]);
+  const recommended = useMemo(() => myPromos.slice(0, 8), [myPromos]);
 
   const economyToday = useMemo(
     () => myPromos.slice(0, 20).reduce((acc, p) => acc + (p.original_price - p.price), 0),
@@ -163,13 +168,21 @@ function PromocoesHome() {
           <section>
             <h2 className="mb-2 px-1 text-sm font-semibold">Seus panfletos</h2>
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {flyers.slice(0, 8).map((f) => (
-                <div key={f.id} className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1">
-                  <Store className="size-3 text-muted-foreground" />
-                  <span className="text-[11px] font-medium">{f.store_name ?? "Mercado"}</span>
-                  <FlyerStatusChip status={f.status} />
-                </div>
-              ))}
+              {flyers.slice(0, 8).map((f) => {
+                const validLabel = f.valid_until
+                  ? `até ${format(new Date(f.valid_until), "dd/MM", { locale: ptBR })}`
+                  : null;
+                return (
+                  <div key={f.id} className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1">
+                    <Store className="size-3 text-muted-foreground" />
+                    <span className="text-[11px] font-medium">
+                      {f.store_name ?? "Mercado"}
+                      {validLabel && <span className="ml-1 text-muted-foreground">{validLabel}</span>}
+                    </span>
+                    <FlyerStatusChip status={f.status} />
+                  </div>
+                );
+              })}
               <Link to="/promocoes/cadastrar" className="flex shrink-0 items-center gap-1 rounded-full border border-dashed border-primary px-2.5 py-1 text-[11px] font-semibold text-primary">
                 <Plus className="size-3" /> Novo
               </Link>
