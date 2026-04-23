@@ -12,8 +12,8 @@ import { Receipt } from "lucide-react";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar — Cuponizei" },
-      { name: "description", content: "Entre ou crie sua conta no Cuponizei." },
+      { title: "Entrar — CuponizAI" },
+      { name: "description", content: "Entre ou crie sua conta no CuponizAI." },
     ],
   }),
   component: AuthPage,
@@ -74,7 +74,7 @@ function AuthPage() {
           <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-primary text-primary-foreground shadow-elevated">
             <Receipt className="size-8" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Cuponizei</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">CuponizAI</h1>
           <p className="text-center text-sm text-muted-foreground">
             Tire foto do cupom. A IA organiza tudo.
           </p>

@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Personalize sua experiência — Cuponizei" },
+      { title: "Personalize sua experiência — CuponizAI" },
       { name: "description", content: "Conte sobre você e sua casa para receber insights sob medida." },
     ],
   }),
@@ -187,7 +187,7 @@ function OnboardingPage() {
             <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-primary text-primary-foreground">
               <Sparkles className="size-4" />
             </div>
-            <span className="text-sm font-semibold">Cuponizei</span>
+            <span className="text-sm font-semibold">CuponizAI</span>
           </div>
           <button
             onClick={handleSkip}

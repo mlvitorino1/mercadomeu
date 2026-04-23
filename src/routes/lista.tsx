@@ -33,7 +33,7 @@ type ListItem = {
 export const Route = createFileRoute("/lista")({
   head: () => ({
     meta: [
-      { title: "Lista de compras — Cuponizei" },
+      { title: "Lista de compras — CuponizAI" },
       { name: "description", content: "Lista inteligente baseada em estoque baixo e seus hábitos." },
     ],
   }),
@@ -242,7 +242,7 @@ function ListaPage() {
       });
       lines.push("");
     });
-    lines.push("— Cuponizei");
+    lines.push("— CuponizAI");
     return lines.join("\n");
   }
 

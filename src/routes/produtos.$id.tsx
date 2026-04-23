@@ -18,7 +18,7 @@ type Item = Database["public"]["Tables"]["receipt_items"]["Row"] & {
 export const Route = createFileRoute("/produtos/$id")({
   head: () => ({
     meta: [
-      { title: "Histórico do produto — Cuponizei" },
+      { title: "Histórico do produto — CuponizAI" },
       { name: "description", content: "Evolução de preços e comparativo entre mercados." },
     ],
   }),

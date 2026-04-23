@@ -32,7 +32,7 @@ type Aggregated = {
 export const Route = createFileRoute("/produtos/")({
   head: () => ({
     meta: [
-      { title: "Produtos — Cuponizei" },
+      { title: "Produtos — CuponizAI" },
       { name: "description", content: "Histórico de preços e variações dos produtos que você compra." },
     ],
   }),

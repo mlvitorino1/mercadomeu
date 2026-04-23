@@ -15,7 +15,7 @@ type Receipt = Database["public"]["Tables"]["receipts"]["Row"] & { item_count: n
 export const Route = createFileRoute("/cupons/")({
   head: () => ({
     meta: [
-      { title: "Cupons — Cuponizei" },
+      { title: "Cupons — CuponizAI" },
       { name: "description", content: "Lista cronológica de todos os seus cupons." },
     ],
   }),

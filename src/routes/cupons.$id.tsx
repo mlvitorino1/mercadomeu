@@ -16,7 +16,7 @@ type Item = Database["public"]["Tables"]["receipt_items"]["Row"];
 
 export const Route = createFileRoute("/cupons/$id")({
   head: () => ({
-    meta: [{ title: "Detalhes do cupom — Cuponizei" }],
+    meta: [{ title: "Detalhes do cupom — CuponizAI" }],
   }),
   component: ReceiptDetailPage,
 });
