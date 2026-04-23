@@ -86,28 +86,32 @@ function OnboardingPage() {
     if (!authLoading && !user) navigate({ to: "/auth" });
   }, [user, authLoading, navigate]);
 
-  // Pré-carrega valores se o usuário já tinha começado
+  // Carrega cidades e valores prévios
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("household_profile")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data) {
-        setForm({
-          adults: data.adults,
-          children: data.children,
-          pets: data.pets,
-          income_range: data.income_range ?? "",
-          monthly_grocery_budget: data.monthly_grocery_budget?.toString() ?? "",
-          restrictions: data.restrictions ?? [],
-          favorite_stores: (data.favorite_stores ?? []).join(", "),
-          shopping_frequency: data.shopping_frequency ?? "",
-          preferred_payment_method: data.preferred_payment_method ?? "",
-        });
-      }
+      const [profileRes, locationRes, citiesRes] = await Promise.all([
+        supabase.from("household_profile").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_location").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("cities").select("id, name, state").order("name"),
+      ]);
+      if (citiesRes.data) setCities(citiesRes.data);
+      const data = profileRes.data;
+      const loc = locationRes.data;
+      setForm((s) => ({
+        ...s,
+        adults: data?.adults ?? s.adults,
+        children: data?.children ?? s.children,
+        pets: data?.pets ?? s.pets,
+        income_range: data?.income_range ?? "",
+        monthly_grocery_budget: data?.monthly_grocery_budget?.toString() ?? "",
+        restrictions: data?.restrictions ?? [],
+        favorite_stores: (data?.favorite_stores ?? []).join(", "),
+        shopping_frequency: data?.shopping_frequency ?? "",
+        preferred_payment_method: data?.preferred_payment_method ?? "",
+        city_id: loc?.city_id ?? "",
+        radius_km: loc?.radius_km ?? 5,
+      }));
       setLoadingProfile(false);
     })();
   }, [user]);
