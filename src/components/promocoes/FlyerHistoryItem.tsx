@@ -50,8 +50,8 @@ export function FlyerHistoryItem({
           )}
         </div>
         <div className="flex shrink-0 gap-1">
-          {flyer.status === "failed" && (
-            <Button size="icon" variant="ghost" className="size-7" onClick={() => onReprocess(flyer.id)}>
+          {(flyer.status === "failed" || flyer.status === "processing" || flyer.status === "pending") && (
+            <Button size="icon" variant="ghost" className="size-7" onClick={() => onReprocess(flyer.id)} title="Reprocessar">
               <RefreshCw className="size-3.5" />
             </Button>
           )}

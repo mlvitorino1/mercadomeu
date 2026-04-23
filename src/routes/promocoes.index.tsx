@@ -54,9 +54,9 @@ function PromocoesHome() {
     if (!authLoading && !user) navigate({ to: "/auth" });
   }, [user, authLoading, navigate]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts: { silent?: boolean } = {}) => {
     if (!user) return;
-    setLoading(true);
+    if (!opts.silent) setLoading(true);
     const [data, ctx, alertsRes, flyersRes, myPromosRes] = await Promise.all([
       fetchActivePromotions(),
       fetchUserContext(user.id),
@@ -87,16 +87,34 @@ function PromocoesHome() {
       ...f, store_name: f.store_id ? data.stores.get(f.store_id)?.name ?? null : null,
     }));
     setFlyers(enriched);
-    setLoading(false);
+    if (!opts.silent) setLoading(false);
   }, [user]);
 
   useEffect(() => { void load(); }, [load]);
 
-  // Poll while any flyer is processing
+  // Auto-fail stale flyers (stuck >3min in pending/processing) — likely edge function timeout
+  useEffect(() => {
+    const stale = flyers.filter((f) => {
+      if (f.status !== "pending" && f.status !== "processing") return false;
+      return Date.now() - new Date(f.created_at).getTime() > 3 * 60 * 1000;
+    });
+    if (stale.length === 0) return;
+    void (async () => {
+      for (const f of stale) {
+        await supabase.from("promo_flyers").update({
+          status: "failed",
+          error_message: "Tempo de processamento excedido. Tente novamente com menos páginas ou imagens menores.",
+        }).eq("id", f.id);
+      }
+      void load({ silent: true });
+    })();
+  }, [flyers, load]);
+
+  // Poll silently while any flyer is processing
   useEffect(() => {
     const hasProcessing = flyers.some((f) => f.status === "pending" || f.status === "processing");
     if (!hasProcessing) return;
-    const t = setInterval(() => { void load(); }, 4000);
+    const t = setInterval(() => { void load({ silent: true }); }, 4000);
     return () => clearInterval(t);
   }, [flyers, load]);
 
