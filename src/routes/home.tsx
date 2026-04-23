@@ -412,7 +412,7 @@ function HomePage() {
             {forecast && forecast.stock_alerts && forecast.stock_alerts.length > 0 && (
               <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5 p-5 shadow-card">
                 <button
-                  onClick={() => navigate({ to: "/estoque", search: {} })}
+                  onClick={() => navigate({ to: "/estoque", search: { product: undefined } })}
                   className="flex w-full items-center gap-2 text-left"
                 >
                   <PackageOpen className="size-4 text-primary" />
