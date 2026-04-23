@@ -411,16 +411,24 @@ function HomePage() {
             {/* Alertas de estoque IA — Fase 4+ */}
             {forecast && forecast.stock_alerts && forecast.stock_alerts.length > 0 && (
               <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5 p-5 shadow-card">
-                <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate({ to: "/estoque" })}
+                  className="flex w-full items-center gap-2 text-left"
+                >
                   <PackageOpen className="size-4 text-primary" />
                   <h3 className="text-sm font-semibold">Provável baixa de estoque</h3>
-                </div>
+                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                </button>
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Estimativa baseada em {household ? `sua casa (${household.adults + household.children} pessoas)` : "seu padrão de consumo"}.
                 </p>
                 <div className="mt-3 space-y-2">
                   {forecast.stock_alerts.map((s, i) => (
-                    <div key={i} className="flex items-center gap-3 rounded-xl bg-muted/40 p-3">
+                    <button
+                      key={i}
+                      onClick={() => navigate({ to: "/estoque", search: { product: s.product } })}
+                      className="flex w-full items-center gap-3 rounded-xl bg-muted/40 p-3 text-left transition-colors hover:bg-muted/70"
+                    >
                       <div className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
                         <span className="text-sm font-bold leading-none tabular-nums">{Math.max(0, Math.round(s.days_left_estimate))}</span>
                         <span className="text-[8px] font-medium uppercase leading-none">dias</span>
@@ -429,8 +437,34 @@ function HomePage() {
                         <p className="line-clamp-1 text-sm font-semibold">{s.product}</p>
                         <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground leading-snug">{s.reason}</p>
                       </div>
-                    </div>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    </button>
                   ))}
+                </div>
+                <Button
+                  onClick={() => navigate({ to: "/lista" })}
+                  className="mt-4 w-full bg-gradient-primary"
+                  size="sm"
+                >
+                  <ShoppingBasket className="size-4" /> Gerar lista de compras
+                </Button>
+              </Card>
+            )}
+
+            {/* Botão CTA de lista (sem alertas) */}
+            {forecast && (!forecast.stock_alerts || forecast.stock_alerts.length === 0) && receipts.length > 0 && (
+              <Card className="border-primary/20 bg-gradient-to-br from-card to-accent/30 p-4 shadow-card">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground">
+                    <ShoppingBasket className="size-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">Gerar lista de compras</p>
+                    <p className="text-xs text-muted-foreground">A IA monta com base nos seus hábitos.</p>
+                  </div>
+                  <Button onClick={() => navigate({ to: "/lista" })} size="sm" variant="secondary" className="shrink-0">
+                    Abrir
+                  </Button>
                 </div>
               </Card>
             )}
