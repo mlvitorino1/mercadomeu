@@ -2,3 +2,6 @@ project_id = "tyvlfzgpkmvusbbefnuc"
 
 [functions.extract-receipt]
 verify_jwt = false
+
+[functions.insights-ai]
+verify_jwt = false
