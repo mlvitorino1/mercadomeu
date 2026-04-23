@@ -410,6 +410,22 @@ function HomePage() {
               </Card>
             )}
 
+            {/* Card de entrada Promoções */}
+            <Link to="/promocoes" className="block">
+              <Card className="relative overflow-hidden rounded-2xl border-0 bg-gradient-promo p-4 text-primary-foreground shadow-card transition-transform active:scale-[0.99]">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-white/20 text-2xl backdrop-blur">
+                    🏷️
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold">Promoções inteligentes</p>
+                    <p className="text-xs opacity-90">Ofertas perto de você, baseadas no seu histórico</p>
+                  </div>
+                  <ChevronRight className="size-5 opacity-80" />
+                </div>
+              </Card>
+            </Link>
+
             {/* Atalhos rápidos */}
             <div className="grid grid-cols-3 gap-2">
               <ShortcutCard to="/calendario" icon={CalendarDays} label="Calendário" />
