@@ -295,7 +295,7 @@ function EstoquePage() {
             <p className="mt-1 text-xs text-muted-foreground">
               Adicione mais cupons para que a IA tenha dados suficientes.
             </p>
-            <Button onClick={generate} variant="outline" className="mt-4" disabled={items.length === 0}>
+            <Button onClick={() => generate(true)} variant="outline" className="mt-4" disabled={items.length === 0}>
               Tentar novamente
             </Button>
           </Card>
