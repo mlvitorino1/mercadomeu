@@ -410,21 +410,30 @@ function HomePage() {
               </Card>
             )}
 
-            {/* Card de entrada Promoções */}
-            <Link to="/promocoes" className="block">
-              <Card className="relative overflow-hidden rounded-2xl border-0 bg-gradient-promo p-4 text-primary-foreground shadow-card transition-transform active:scale-[0.99]">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-white/20 text-2xl backdrop-blur">
-                    🏷️
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold">Promoções inteligentes</p>
-                    <p className="text-xs opacity-90">Ofertas perto de você, baseadas no seu histórico</p>
-                  </div>
-                  <ChevronRight className="size-5 opacity-80" />
+            {/* Hero Promoções inteligentes */}
+            <Card className="relative overflow-hidden rounded-2xl border-0 bg-gradient-promo p-4 text-primary-foreground shadow-card">
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-white/20 text-2xl backdrop-blur">
+                  🏷️
                 </div>
-              </Card>
-            </Link>
+                <div className="flex-1">
+                  <p className="text-sm font-bold">Promoções inteligentes</p>
+                  <p className="text-xs opacity-90">Cadastre o panfleto do seu mercado e a IA extrai as ofertas</p>
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Link to="/promocoes/cadastrar" className="flex-1">
+                  <Button size="sm" variant="secondary" className="w-full gap-1.5">
+                    <Plus className="size-3.5" /> Cadastrar panfleto
+                  </Button>
+                </Link>
+                <Link to="/promocoes" className="flex-1">
+                  <Button size="sm" variant="secondary" className="w-full gap-1.5">
+                    Ver ofertas <ChevronRight className="size-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
 
             {/* Atalhos rápidos */}
             <div className="grid grid-cols-3 gap-2">

@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.insights-ai]
 verify_jwt = false
+
+[functions.extract-flyer]
+verify_jwt = false

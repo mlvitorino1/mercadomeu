@@ -206,6 +206,71 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_flyers: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          extracted_count: number
+          id: string
+          processed_at: string | null
+          raw_extraction: Json | null
+          source_kind: string
+          source_url: string | null
+          status: string
+          storage_path: string | null
+          store_id: string | null
+          store_name_guess: string | null
+          updated_at: string
+          user_id: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          extracted_count?: number
+          id?: string
+          processed_at?: string | null
+          raw_extraction?: Json | null
+          source_kind: string
+          source_url?: string | null
+          status?: string
+          storage_path?: string | null
+          store_id?: string | null
+          store_name_guess?: string | null
+          updated_at?: string
+          user_id: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          extracted_count?: number
+          id?: string
+          processed_at?: string | null
+          raw_extraction?: Json | null
+          source_kind?: string
+          source_url?: string | null
+          status?: string
+          storage_path?: string | null
+          store_id?: string | null
+          store_name_guess?: string | null
+          updated_at?: string
+          user_id?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_flyers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "promo_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       promo_notifications: {
         Row: {
           body: string
@@ -327,6 +392,7 @@ export type Database = {
           image_emoji: string
           name: string
           unit: string
+          user_id: string | null
         }
         Insert: {
           brand?: string | null
@@ -336,6 +402,7 @@ export type Database = {
           image_emoji?: string
           name: string
           unit?: string
+          user_id?: string | null
         }
         Update: {
           brand?: string | null
@@ -345,6 +412,7 @@ export type Database = {
           image_emoji?: string
           name?: string
           unit?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -368,6 +436,7 @@ export type Database = {
           lng: number | null
           logo_emoji: string
           name: string
+          user_id: string | null
         }
         Insert: {
           address?: string | null
@@ -380,6 +449,7 @@ export type Database = {
           lng?: number | null
           logo_emoji?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           address?: string | null
@@ -392,6 +462,7 @@ export type Database = {
           lng?: number | null
           logo_emoji?: string
           name?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -408,6 +479,7 @@ export type Database = {
           created_at: string
           discount_pct: number | null
           ends_at: string
+          flyer_id: string | null
           id: string
           is_featured: boolean
           original_price: number
@@ -419,11 +491,13 @@ export type Database = {
           stock_level: string
           store_id: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           discount_pct?: number | null
           ends_at: string
+          flyer_id?: string | null
           id?: string
           is_featured?: boolean
           original_price: number
@@ -435,11 +509,13 @@ export type Database = {
           stock_level?: string
           store_id: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           discount_pct?: number | null
           ends_at?: string
+          flyer_id?: string | null
           id?: string
           is_featured?: boolean
           original_price?: number
@@ -451,8 +527,16 @@ export type Database = {
           stock_level?: string
           store_id?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "promotions_flyer_id_fkey"
+            columns: ["flyer_id"]
+            isOneToOne: false
+            referencedRelation: "promo_flyers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "promotions_product_id_fkey"
             columns: ["product_id"]

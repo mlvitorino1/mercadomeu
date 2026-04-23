@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Receipt, Plus, CalendarDays, Package } from "lucide-react";
+import { Home, Receipt, Plus, Tag, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReactNode, ComponentType } from "react";
 
@@ -31,7 +31,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <nav className="fixed bottom-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 items-stretch border-t border-border bg-card/95 backdrop-blur-md shadow-elevated">
         {navItem("/home", Home, "Início", path === "/" || path.startsWith("/home"))}
-        {navItem("/calendario", CalendarDays, "Calendário", path.startsWith("/calendario"))}
+        {navItem("/promocoes", Tag, "Ofertas", path.startsWith("/promocoes"))}
         <Link
           to="/adicionar"
           className="relative -mt-6 flex flex-1 items-start justify-center"
