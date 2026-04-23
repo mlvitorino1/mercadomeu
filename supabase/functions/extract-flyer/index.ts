@@ -265,6 +265,8 @@ serve(async (req) => {
     const defaultEnds = result.valid_until ?? new Date(Date.now() + 7 * 86400000).toISOString();
 
     let inserted = 0;
+    let insertErrors = 0;
+    let lastInsertError: string | null = null;
     for (const it of items) {
       if (!it.product_name || !it.price) continue;
       const categoryId = catMap.get(it.category_slug) ?? null;
@@ -284,7 +286,7 @@ serve(async (req) => {
           name: it.product_name, brand: it.brand ?? null, category_id: categoryId,
           unit: it.unit ?? "un", image_emoji: "🏷️", user_id: f.user_id,
         }).select("id").single();
-        if (pErr) continue;
+        if (pErr) { console.error("product insert error:", pErr.message); continue; }
         productId = newProd.id as string;
         // alias
         await sb.from("promo_product_aliases").insert({
@@ -296,17 +298,33 @@ serve(async (req) => {
       const original = Number(it.original_price ?? it.price);
       const discount = original > price ? Math.round(((original - price) / original) * 100) : 0;
 
+      // Normalize ends_at: must be a valid future timestamp; if AI returned a bare date or past date, use defaultEnds.
+      let endsAtIso = defaultEnds;
+      if (it.ends_at && it.ends_at.length > 0) {
+        const parsed = new Date(it.ends_at.length === 10 ? `${it.ends_at}T23:59:59Z` : it.ends_at);
+        if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+          endsAtIso = parsed.toISOString();
+        }
+      }
+
       const { error: promErr } = await sb.from("promotions").insert({
         product_id: productId,
         store_id: storeId,
         price, original_price: original, discount_pct: discount,
-        ends_at: it.ends_at && it.ends_at.length > 0 ? it.ends_at : defaultEnds,
+        ends_at: endsAtIso,
         starts_at: new Date().toISOString(),
         status: "ativa", source: "flyer", stock_level: "alto",
         user_id: f.user_id, flyer_id: f.id,
       });
-      if (!promErr) inserted++;
+      if (!promErr) {
+        inserted++;
+      } else {
+        insertErrors++;
+        lastInsertError = promErr.message;
+        console.error("promotion insert error:", promErr.message, { product_id: productId, store_id: storeId, price, ends_at: endsAtIso });
+      }
     }
+    console.log(`extract-flyer: items=${items.length} inserted=${inserted} errors=${insertErrors} lastError=${lastInsertError}`);
 
     await setStatus(sb, f.id, "ready", {
       extracted_count: inserted,
