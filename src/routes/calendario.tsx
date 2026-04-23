@@ -198,6 +198,35 @@ function CalendarPage() {
           </div>
         </Card>
 
+        {/* Sugestão para ir até o mês com cupons */}
+        {!loading && receipts.length === 0 && latestReceiptDate && (
+          latestReceiptDate.getFullYear() !== cursor.getFullYear() ||
+          latestReceiptDate.getMonth() !== cursor.getMonth()
+        ) && (
+          <Card className="border-dashed border-primary/40 bg-primary/5 p-4 shadow-card">
+            <div className="flex items-start gap-3">
+              <ReceiptIcon className="size-4 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Sem cupons em {MONTHS[cursor.getMonth()]}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Seu cupom mais recente é de {MONTHS[latestReceiptDate.getMonth()]} {latestReceiptDate.getFullYear()}.
+                </p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setSelectedDay(null);
+                    setCursor(new Date(latestReceiptDate.getFullYear(), latestReceiptDate.getMonth(), 1));
+                  }}
+                  className="mt-2 h-8 text-xs"
+                >
+                  Ir até esse mês
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {selectedDay && selectedDate && (
           <Card className="p-4 shadow-card">
             <h3 className="text-sm font-semibold">
