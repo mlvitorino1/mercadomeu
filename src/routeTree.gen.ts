@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdicionarRouteImport } from './routes/adicionar'
@@ -18,6 +19,11 @@ import { Route as CuponsIndexRouteImport } from './routes/cupons.index'
 import { Route as ProdutosIdRouteImport } from './routes/produtos.$id'
 import { Route as CuponsIdRouteImport } from './routes/cupons.$id'
 
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CalendarioRoute = CalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
+  '/home': typeof HomeRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/cupons/': typeof CuponsIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
+  '/home': typeof HomeRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/cupons': typeof CuponsIndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
+  '/home': typeof HomeRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/cupons/': typeof CuponsIndexRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/adicionar'
     | '/auth'
     | '/calendario'
+    | '/home'
     | '/cupons/$id'
     | '/produtos/$id'
     | '/cupons/'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/adicionar'
     | '/auth'
     | '/calendario'
+    | '/home'
     | '/cupons/$id'
     | '/produtos/$id'
     | '/cupons'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/adicionar'
     | '/auth'
     | '/calendario'
+    | '/home'
     | '/cupons/$id'
     | '/produtos/$id'
     | '/cupons/'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AdicionarRoute: typeof AdicionarRoute
   AuthRoute: typeof AuthRoute
   CalendarioRoute: typeof CalendarioRoute
+  HomeRoute: typeof HomeRoute
   CuponsIdRoute: typeof CuponsIdRoute
   ProdutosIdRoute: typeof ProdutosIdRoute
   CuponsIndexRoute: typeof CuponsIndexRoute
@@ -136,6 +149,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calendario': {
       id: '/calendario'
       path: '/calendario'
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdicionarRoute: AdicionarRoute,
   AuthRoute: AuthRoute,
   CalendarioRoute: CalendarioRoute,
+  HomeRoute: HomeRoute,
   CuponsIdRoute: CuponsIdRoute,
   ProdutosIdRoute: ProdutosIdRoute,
   CuponsIndexRoute: CuponsIndexRoute,
