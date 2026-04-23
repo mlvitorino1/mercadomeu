@@ -130,6 +130,8 @@ Gere previsão, 3 dicas e alertas de estoque chamando a função generate_insigh
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        temperature: 0,
+        seed: 42,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
@@ -170,6 +172,20 @@ Gere previsão, 3 dicas e alertas de estoque chamando a função generate_insigh
       });
     }
     const parsed = JSON.parse(toolCall.function.arguments);
+
+    // Estabilização: arredondar números para evitar mudanças cosméticas entre chamadas idênticas.
+    if (typeof parsed.forecast_month_total === "number") {
+      parsed.forecast_month_total = Math.round(parsed.forecast_month_total / 5) * 5;
+    }
+    if (Array.isArray(parsed.stock_alerts)) {
+      parsed.stock_alerts = parsed.stock_alerts.map((a: { days_left_estimate?: number }) => ({
+        ...a,
+        days_left_estimate:
+          typeof a.days_left_estimate === "number"
+            ? Math.max(0, Math.round(a.days_left_estimate))
+            : a.days_left_estimate,
+      }));
+    }
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
