@@ -82,10 +82,47 @@ function EstoquePage() {
     })();
   }, [user]);
 
-  // Recupera previsão IA
-  async function generate() {
+  // Top produtos para hash determinístico (precisa coincidir com /lista para reaproveitar cache)
+  const topProductsForHash = useMemo(() => {
+    const map = new Map<string, number>();
+    items.forEach((it) => {
+      const k = (it.canonical_name || it.description).toLowerCase();
+      map.set(k, (map.get(k) ?? 0) + Number(it.quantity));
+    });
+    return [...map.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, qty]) => ({ name, qty: Math.round(qty) }));
+  }, [items]);
+
+  async function generate(force = false) {
     if (!user || generating) return;
     setGenerating(true);
+
+    const hashInput = {
+      kind: "stock",
+      topProducts: topProductsForHash,
+      household: {
+        adults,
+        children,
+        pets,
+        restrictions: [...(household?.restrictions ?? [])].sort(),
+      },
+    };
+    const inputHash = await hashInputs(hashInput);
+
+    if (!force) {
+      const cached = await readCache<{ stock_alerts?: StockAlert[] }>(user.id, "stock", inputHash);
+      if (cached) {
+        setAlerts(cached.payload.stock_alerts ?? []);
+        setGeneratedAt(cached.generatedAt);
+        setGenerating(false);
+        return;
+      }
+    } else {
+      await clearCache(user.id, "stock");
+    }
+
     const summary = {
       compras_recentes: items
         .slice()
@@ -121,17 +158,21 @@ function EstoquePage() {
     if (error || data?.error) {
       toast.error("Não consegui gerar agora.");
     } else {
-      setAlerts(data.stock_alerts ?? []);
+      const fresh = (data.stock_alerts ?? []) as StockAlert[];
+      setAlerts(fresh);
+      const now = new Date().toISOString();
+      setGeneratedAt(now);
+      await writeCache<{ stock_alerts: StockAlert[] }>(user.id, "stock", inputHash, { stock_alerts: fresh });
     }
     setGenerating(false);
   }
 
+  // Carrega cache automaticamente uma única vez quando os dados estão prontos.
   useEffect(() => {
-    if (!loading && items.length > 0 && alerts.length === 0) {
-      void generate();
-    }
+    if (loading || generating || alerts.length > 0 || items.length === 0) return;
+    void generate(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, items.length]);
+  }, [loading]);
 
   async function saveHousehold() {
     if (!user) return;
@@ -152,7 +193,8 @@ function EstoquePage() {
       toast.success("Casa atualizada. Recalculando…");
       setHousehold((h) => (h ? { ...h, adults, children, pets } : h));
       setAlerts([]);
-      await generate();
+      // Mudança de família = nova entrada → força recálculo (limpa cache antigo).
+      await generate(true);
     }
     setSavingHousehold(false);
   }
