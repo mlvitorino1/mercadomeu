@@ -296,7 +296,6 @@ serve(async (req) => {
 
       const price = Number(it.price);
       const original = Number(it.original_price ?? it.price);
-      const discount = original > price ? Math.round(((original - price) / original) * 100) : 0;
 
       // Normalize ends_at: must be a valid future timestamp; if AI returned a bare date or past date, use defaultEnds.
       let endsAtIso = defaultEnds;
@@ -307,15 +306,25 @@ serve(async (req) => {
         }
       }
 
+      // discount_pct is a GENERATED column — do not insert it.
       const { error: promErr } = await sb.from("promotions").insert({
         product_id: productId,
         store_id: storeId,
-        price, original_price: original, discount_pct: discount,
+        price, original_price: original,
         ends_at: endsAtIso,
         starts_at: new Date().toISOString(),
         status: "ativa", source: "flyer", stock_level: "alto",
         user_id: f.user_id, flyer_id: f.id,
       });
+      if (!promErr) {
+        inserted++;
+      } else {
+        insertErrors++;
+        lastInsertError = promErr.message;
+        console.error("promotion insert error:", promErr.message, { product_id: productId, store_id: storeId, price, ends_at: endsAtIso });
+      }
+    }
+    console.log(`extract-flyer: items=${items.length} inserted=${inserted} errors=${insertErrors} lastError=${lastInsertError}`);
       if (!promErr) {
         inserted++;
       } else {
