@@ -403,6 +403,58 @@ function OnboardingPage() {
               </Card>
             </>
           )}
+
+          {step === 4 && (
+            <>
+              <div className="space-y-2">
+                <Label>Sua cidade</Label>
+                <Select value={form.city_id} onValueChange={(v) => update("city_id", v)}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Selecione sua cidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} – {c.state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Usamos para mostrar mercados e promoções perto de você.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Raio de busca</Label>
+                  <span className="text-xs font-semibold text-primary">{form.radius_km} km</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={form.radius_km}
+                  onChange={(e) => update("radius_km", Number(e.target.value))}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+                />
+                <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <span>1 km</span>
+                  <span>20 km</span>
+                </div>
+              </div>
+
+              <Card className="border-primary/20 bg-primary/5 p-4">
+                <div className="flex gap-3">
+                  <MapPin className="size-4 shrink-0 text-primary" />
+                  <p className="text-xs leading-relaxed text-foreground">
+                    Quanto maior o raio, mais ofertas encontramos — mas com mercados um pouco mais distantes.
+                  </p>
+                </div>
+              </Card>
+            </>
+          )}
         </div>
 
         {/* Footer fixo */}
