@@ -21,10 +21,10 @@ export function EconomyMeter({ value, label }: { value: number; label?: string }
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <span className="text-xs font-medium uppercase tracking-wide text-primary-foreground/80">
+      <span className="text-xs font-medium uppercase tracking-wide text-white/80">
         {label ?? "Você pode economizar hoje"}
       </span>
-      <span className="text-4xl font-bold tabular-nums text-primary-foreground">
+      <span className="text-4xl font-bold tabular-nums text-white">
         {formatBRL(display)}
       </span>
     </div>

@@ -411,14 +411,14 @@ function HomePage() {
             )}
 
             {/* Hero Promoções inteligentes */}
-            <Card className="relative overflow-hidden rounded-2xl border-0 bg-gradient-promo p-4 text-primary-foreground shadow-card">
+            <Card className="relative overflow-hidden rounded-2xl border-0 bg-gradient-promo p-4 text-white shadow-card">
               <div className="flex items-center gap-3">
                 <div className="flex size-12 items-center justify-center rounded-xl bg-white/20 text-2xl backdrop-blur">
                   🏷️
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold">Promoções inteligentes</p>
-                  <p className="text-xs opacity-90">Cadastre o panfleto do seu mercado e a IA extrai as ofertas</p>
+                  <p className="text-sm font-bold text-white">Promoções inteligentes</p>
+                  <p className="text-xs text-white/90">Cadastre o panfleto do seu mercado e a IA extrai as ofertas</p>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">
