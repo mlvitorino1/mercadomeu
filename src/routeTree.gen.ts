@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ListaRouteImport } from './routes/lista'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdicionarRouteImport } from './routes/adicionar'
@@ -25,9 +27,19 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ListaRoute = ListaRouteImport.update({
+  id: '/lista',
+  path: '/lista',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstoqueRoute = EstoqueRouteImport.update({
+  id: '/estoque',
+  path: '/estoque',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarioRoute = CalendarioRouteImport.update({
@@ -76,7 +88,9 @@ export interface FileRoutesByFullPath {
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
+  '/estoque': typeof EstoqueRoute
   '/home': typeof HomeRoute
+  '/lista': typeof ListaRoute
   '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
@@ -88,7 +102,9 @@ export interface FileRoutesByTo {
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
+  '/estoque': typeof EstoqueRoute
   '/home': typeof HomeRoute
+  '/lista': typeof ListaRoute
   '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
@@ -101,7 +117,9 @@ export interface FileRoutesById {
   '/adicionar': typeof AdicionarRoute
   '/auth': typeof AuthRoute
   '/calendario': typeof CalendarioRoute
+  '/estoque': typeof EstoqueRoute
   '/home': typeof HomeRoute
+  '/lista': typeof ListaRoute
   '/onboarding': typeof OnboardingRoute
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
@@ -115,7 +133,9 @@ export interface FileRouteTypes {
     | '/adicionar'
     | '/auth'
     | '/calendario'
+    | '/estoque'
     | '/home'
+    | '/lista'
     | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
@@ -127,7 +147,9 @@ export interface FileRouteTypes {
     | '/adicionar'
     | '/auth'
     | '/calendario'
+    | '/estoque'
     | '/home'
+    | '/lista'
     | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
@@ -139,7 +161,9 @@ export interface FileRouteTypes {
     | '/adicionar'
     | '/auth'
     | '/calendario'
+    | '/estoque'
     | '/home'
+    | '/lista'
     | '/onboarding'
     | '/cupons/$id'
     | '/produtos/$id'
@@ -152,7 +176,9 @@ export interface RootRouteChildren {
   AdicionarRoute: typeof AdicionarRoute
   AuthRoute: typeof AuthRoute
   CalendarioRoute: typeof CalendarioRoute
+  EstoqueRoute: typeof EstoqueRoute
   HomeRoute: typeof HomeRoute
+  ListaRoute: typeof ListaRoute
   OnboardingRoute: typeof OnboardingRoute
   CuponsIdRoute: typeof CuponsIdRoute
   ProdutosIdRoute: typeof ProdutosIdRoute
@@ -169,11 +195,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lista': {
+      id: '/lista'
+      path: '/lista'
+      fullPath: '/lista'
+      preLoaderRoute: typeof ListaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/home': {
       id: '/home'
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estoque': {
+      id: '/estoque'
+      path: '/estoque'
+      fullPath: '/estoque'
+      preLoaderRoute: typeof EstoqueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendario': {
@@ -240,7 +280,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdicionarRoute: AdicionarRoute,
   AuthRoute: AuthRoute,
   CalendarioRoute: CalendarioRoute,
+  EstoqueRoute: EstoqueRoute,
   HomeRoute: HomeRoute,
+  ListaRoute: ListaRoute,
   OnboardingRoute: OnboardingRoute,
   CuponsIdRoute: CuponsIdRoute,
   ProdutosIdRoute: ProdutosIdRoute,
