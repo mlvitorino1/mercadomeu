@@ -154,6 +154,30 @@ function OnboardingPage() {
       toast.error("Não consegui salvar agora. Tente de novo.");
       return false;
     }
+
+    // Persiste cidade escolhida (se houver) na user_location
+    if (form.city_id) {
+      const city = cities.find((c) => c.id === form.city_id);
+      // Coords aproximadas via lookup direto na tabela (server tem lat/lng)
+      const { data: cityRow } = await supabase
+        .from("cities")
+        .select("lat, lng")
+        .eq("id", form.city_id)
+        .maybeSingle();
+      const locPayload = {
+        user_id: user.id,
+        city_id: form.city_id,
+        lat: cityRow?.lat ?? null,
+        lng: cityRow?.lng ?? null,
+        radius_km: form.radius_km,
+      };
+      const { error: locErr } = await supabase
+        .from("user_location")
+        .upsert(locPayload, { onConflict: "user_id" });
+      if (locErr) {
+        console.warn("Falha ao salvar localização", locErr, city);
+      }
+    }
     return true;
   }
 
