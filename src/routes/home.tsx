@@ -12,11 +12,12 @@ import { computeAchievements, type Achievement } from "@/lib/achievements";
 import {
   LogOut, Wallet, Store, ShoppingBasket, TrendingUp, TrendingDown, ArrowUp, ArrowDown,
   Sparkles, AlertTriangle, Trophy, Lightbulb, Target, Repeat, PiggyBank, Package, CalendarDays,
-  Plus, Award, Compass, Flame, PackageOpen, ChevronRight,
+  Plus, Award, Compass, Flame, PackageOpen, ChevronRight, RefreshCw,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { hashInputs, readCache, writeCache, clearCache, formatRelativeTime } from "@/lib/insights-cache";
 
 type Receipt = Database["public"]["Tables"]["receipts"]["Row"];
 type Item = Database["public"]["Tables"]["receipt_items"]["Row"];
@@ -56,6 +57,7 @@ function HomePage() {
   const [loading, setLoading] = useState(true);
   const [forecast, setForecast] = useState<Forecast | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastGeneratedAt, setForecastGeneratedAt] = useState<string | null>(null);
   const [scope, setScope] = useState<"month" | "all">("month");
 
   useEffect(() => {
@@ -165,11 +167,55 @@ function HomePage() {
     });
   }, [receipts, insights]);
 
-  // Gera previsão IA quando tiver dados suficientes
-  useEffect(() => {
-    if (!user || loading || receipts.length < 2 || forecast || forecastLoading) return;
+  // Insights IA com cache determinístico em ai_insights
+  const loadOrGenerateForecast = useMemo(
+    () => async (force = false) => {
+      if (!user || receipts.length < 2) return;
 
-    (async () => {
+      // Top produtos arredondados para hash estável (mesmos dados → mesmo hash)
+      const topProducts = [...items.reduce((m, it) => {
+        const k = (it.canonical_name || it.description).toLowerCase();
+        m.set(k, (m.get(k) ?? 0) + Number(it.quantity));
+        return m;
+      }, new Map<string, number>()).entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([name, qty]) => ({ name, qty: Math.round(qty) }));
+
+      const hashInput = {
+        totalMonth: Math.round(insights.totalMonth / 5) * 5,
+        totalPrev: Math.round(insights.totalPrev / 5) * 5,
+        monthCount: insights.monthCount,
+        dayOfMonth: insights.dayOfMonth,
+        topProducts,
+        household: household
+          ? {
+              adults: household.adults,
+              children: household.children,
+              pets: household.pets,
+              income: household.income_range,
+              budget: household.monthly_grocery_budget,
+              restrictions: [...(household.restrictions ?? [])].sort(),
+              stores: [...(household.favorite_stores ?? [])].sort(),
+              freq: household.shopping_frequency,
+              pay: household.preferred_payment_method,
+            }
+          : null,
+      };
+
+      const inputHash = await hashInputs(hashInput);
+
+      if (!force) {
+        const cached = await readCache<Forecast>(user.id, "forecast", inputHash);
+        if (cached) {
+          setForecast(cached.payload);
+          setForecastGeneratedAt(cached.generatedAt);
+          return;
+        }
+      } else {
+        await clearCache(user.id, "forecast");
+      }
+
       setForecastLoading(true);
       const summary = {
         mes_atual: {
@@ -217,11 +263,27 @@ function HomePage() {
         if (error.message?.includes("429")) toast.error("Muitas requisições. Aguarde alguns segundos.");
         else if (error.message?.includes("402")) toast.error("Sem créditos na Lovable AI.");
       } else if (data && !data.error) {
-        setForecast(data as Forecast);
+        const payload = data as Forecast;
+        setForecast(payload);
+        const now = new Date().toISOString();
+        setForecastGeneratedAt(now);
+        await writeCache<Forecast>(user.id, "forecast", inputHash, payload);
       }
       setForecastLoading(false);
-    })();
-  }, [user, loading, receipts.length, insights, forecast, forecastLoading, household, items]);
+    },
+    [user, receipts.length, insights, household, items],
+  );
+
+  useEffect(() => {
+    if (loading || forecast || forecastLoading) return;
+    void loadOrGenerateForecast(false);
+  }, [loading, forecast, forecastLoading, loadOrGenerateForecast]);
+
+  async function handleRefreshForecast() {
+    setForecast(null);
+    setForecastGeneratedAt(null);
+    await loadOrGenerateForecast(true);
+  }
 
   if (authLoading || !user) {
     return (
