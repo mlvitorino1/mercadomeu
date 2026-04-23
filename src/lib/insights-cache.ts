@@ -81,13 +81,15 @@ export async function writeCache<T>(
   await supabase
     .from("ai_insights")
     .upsert(
-      {
-        user_id: userId,
-        kind,
-        input_hash: inputHash,
-        payload: payload as unknown as Record<string, unknown>,
-        generated_at: new Date().toISOString(),
-      },
+      [
+        {
+          user_id: userId,
+          kind,
+          input_hash: inputHash,
+          payload: payload as unknown as Record<string, unknown>,
+          generated_at: new Date().toISOString(),
+        },
+      ],
       { onConflict: "user_id,kind" },
     );
 }
