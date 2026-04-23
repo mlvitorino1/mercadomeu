@@ -1,123 +1,130 @@
 
 
-## Módulo Promoções Inteligentes
+## Promoções Inteligentes 2.0 — Cadastro de panfletos por link/upload
 
-Construir um módulo completo dentro do CuponizAI que ajuda o usuário a economizar cruzando promoções de mercados com seu histórico de compras, preferências e localização.
+### Objetivo
+Substituir o seed estático por um fluxo onde o usuário cadastra panfletos dos seus mercados favoritos (link HTML, link de PDF/imagem, upload de PDF, upload de foto). A IA extrai os produtos, normaliza e injeta em `promotions` privadas (RLS por usuário). Refazer a UI da Home (botão Promoções) e da página `/promocoes`. Trocar Calendário por Ofertas no nav inferior.
 
-### Arquitetura em uma frase
-Banco no Lovable Cloud guarda mercados, produtos, promoções e watchlist; um job diário (pg_cron + rota `/api/public/hooks/promotions-*`) atualiza ranking, expira ofertas e gera alertas; o front consome via Supabase JS com RLS por usuário; o ranking é calculado como score determinístico no cliente sobre dados pré-filtrados.
+---
 
 ### 1. Banco de dados (nova migração)
 
-Tabelas novas (todas com `id uuid`, `created_at`, `updated_at` quando faz sentido):
+**Nova tabela `promo_flyers`** — cada panfleto cadastrado:
+- `id`, `user_id` (RLS own), `store_id` (nullable — IA detecta), `store_name_guess` (texto livre quando IA não identifica), `source_kind` ('html_url'|'file_url'|'upload_pdf'|'upload_image'), `source_url`, `storage_path` (bucket `flyers`), `status` ('pending'|'processing'|'ready'|'failed'), `error_message`, `valid_from`, `valid_until`, `extracted_count`, `raw_extraction` jsonb, `created_at`, `processed_at`.
+- Índice em `(user_id, status)`.
 
-- `cities` — `name`, `state`, `lat`, `lng` (públicas, leitura por todos autenticados).
-- `promo_stores` — mercado da rede de promoções: `name`, `chain`, `logo_emoji`, `brand_color`, `city_id`, `address`, `lat`, `lng`. Público.
-- `promo_categories` — `slug`, `name`, `icon` (lucide name). Público.
-- `promo_products` — catálogo público: `name`, `brand`, `category_id`, `unit` (kg/un/L), `image_emoji`. Público.
-- `promo_product_aliases` — `product_id`, `alias` (para casar com `receipt_items.canonical_name`). Público.
-- `promotions` — `product_id`, `store_id`, `price`, `original_price`, `discount_pct` (gerada), `starts_at`, `ends_at`, `stock_level` ('alto'|'médio'|'baixo'), `source` ('manual'|'scraper'|'parceiro'), `status` ('ativa'|'expirada'|'pausada'). Índices em `(store_id, ends_at)`, `(product_id, ends_at)`, `(status, ends_at)`. Público read.
-- `promo_price_history` — `product_id`, `store_id`, `price`, `observed_at`. Público read.
-- `user_watchlist` — `user_id`, `product_id`, `target_price` (opcional), `created_at`. RLS own.
-- `user_promotion_events` — `user_id`, `promotion_id`, `event` ('view'|'click'|'dismiss'|'save'), `created_at`. RLS own. Usado no score.
-- `promo_notifications` — `user_id`, `kind` ('price_drop'|'ending_today'|'favorite_on_sale'|'basket_match'), `title`, `body`, `promotion_id`, `read_at`. RLS own.
-- `user_location` — `user_id`, `city_id`, `lat`, `lng`, `radius_km` (default 5). RLS own.
+**Alterações em `promotions`**:
+- Adicionar `user_id uuid NULL` (NULL = catálogo público demo; preenchido = privada do usuário).
+- Adicionar `flyer_id uuid NULL` (FK lógica com `promo_flyers.id`).
+- Atualizar policy `promotions: public read` para `USING (user_id IS NULL OR user_id = auth.uid())`.
 
-RLS pública (read-only) para `cities`, `promo_stores`, `promo_categories`, `promo_products`, `promo_product_aliases`, `promotions`, `promo_price_history` via policy `USING (true)` para `authenticated`. Sem insert/update/delete pelo client.
+**Alterações em `promo_stores`**:
+- Adicionar `user_id uuid NULL` (NULL = público; preenchido = mercado criado por um usuário).
+- Adicionar policy de insert própria: `WITH CHECK (auth.uid() = user_id)`.
+- Atualizar policy de read: `USING (user_id IS NULL OR user_id = auth.uid())`.
 
-### 2. Lógica de recomendação (client-side, determinística)
+**Bucket de storage `flyers`** (privado) com policies: select/insert/delete próprios via prefixo `{user_id}/...`.
 
-```text
-score(promo, user) =
-  0.30 * frequencia_compra(product, user)        // nº compras nos últimos 90d, normalizado 0–1
-+ 0.25 * desconto_pct / 100
-+ 0.15 * proximidade(store, user)                // 1 - dist/raio, clamp 0–1
-+ 0.10 * marca_preferida(product, household)     // 1 se brand ∈ favorite_brands
-+ 0.10 * urgencia(ends_at)                       // 1 se acaba hoje, 0.5 amanhã, …
-+ 0.10 * historico_click(promo, user)            // CTR normalizado
+### 2. Edge function `extract-flyer`
+
+Nova função em `supabase/functions/extract-flyer/index.ts`. Recebe `{ flyer_id }`. Fluxo:
+
+1. Carrega `promo_flyers` (validação user). Marca `status='processing'`.
+2. **Coleta da fonte** conforme `source_kind`:
+   - `html_url`: usa **Firecrawl** connector (`scrape` formato `markdown` + `links` + `screenshot`) para baixar o conteúdo do site.
+   - `file_url`: `fetch()` direto do PDF/imagem.
+   - `upload_pdf`/`upload_image`: lê do bucket `flyers` via service role.
+3. **Detecção de mercado**: chama Lovable AI Gateway (`gemini-2.5-flash`) com tool `detect_store` recebendo URL/título/markdown → retorna `{chain, name, brand_color, logo_emoji}`. Faz upsert em `promo_stores` (user_id do dono) ou casa com público existente por `chain` (case-insensitive).
+4. **Extração de produtos**: chama Lovable AI Gateway com tool `extract_flyer_items` (multimodal — manda imagens do PDF/site, ou texto do markdown). Schema: `[{ product_name, brand, category_slug, unit, price, original_price, ends_at }]`. Reusa o mesmo prompt-style do `extract-receipt` (PT-BR, normaliza nomes, categoriza em uma das 10 categorias existentes).
+5. **Normalização**: para cada item, faz upsert em `promo_products` (matching por nome+brand existente; senão cria com `user_id` próprio) e cria `promotions` com `user_id`, `flyer_id`, `store_id` calculados. Calcula `discount_pct`. Aliases automáticos: insere `promo_product_aliases` com variações comuns.
+6. Marca `status='ready'`, preenche `extracted_count`, `valid_until`. Em erro: `status='failed'` + `error_message`.
+
+Limites: PDF ≤ 10MB, máximo 3 panfletos processando simultâneos por usuário (verificação por count).
+
+### 3. Frontend — onboarding de panfleto
+
+Novo componente fluxo passo-a-passo em `src/routes/promocoes.cadastrar.tsx` (modal-like fullscreen, 4 passos):
+
+1. **Tipo de fonte**: 4 cards grandes (Link do site / Link PDF ou imagem / Upload PDF / Upload foto). Cada card com instrução visual de "como encontrar" (acordeão expansível com print mockado e dicas: "Vá no site do mercado → menu Encartes → copie o link da página").
+2. **Coleta**: dependendo da escolha — input de URL com validador zod, ou dropzone (react-dropzone? não — usar `<input type="file" accept>` simples) para PDF/imagem. Preview do que foi enviado.
+3. **Validade do panfleto** (opcional): `valid_from` e `valid_until` com defaults sensatos (hoje + 7 dias). IA tenta inferir e sobrescreve depois.
+4. **Processando**: cria registro `promo_flyers`, faz upload se necessário, invoca `extract-flyer` (não bloqueante — mostra progresso em tempo real via polling do status a cada 2s). Ao ficar `ready`, mostra resumo "Adicionamos X promoções do {mercado}" + CTA "Ver promoções".
+
+### 4. Página `/promocoes` — UX refeita
+
+**Header novo** (no lugar do hero atual):
+- Saudação compacta + saldo de economia do dia.
+- Linha de **chips de panfletos ativos** do usuário com status (badge colorido: ✅ ready / ⏳ processing / ⚠️ failed) e ação "+" para cadastrar novo.
+- Empty state forte quando o usuário ainda não cadastrou nenhum: ilustração + CTA "Cadastrar meu primeiro panfleto".
+
+**Seções reorganizadas (em ordem de utilidade)**:
+1. **Suas promoções ativas** (filtradas por panfletos do user) — destaque grande.
+2. **Acabando hoje** (urgência, badge laranja `⏱`).
+3. **Recomendadas** (mantém score atual, mas só sobre catálogo do user + público demo).
+4. **Mercados parceiros** (chips horizontais, agora também mostram mercados que o user cadastrou via panfleto).
+5. **Histórico de panfletos** (lista de todos os `promo_flyers` do user com data, mercado, # produtos, ação reprocessar/excluir).
+
+**Componentes novos** em `src/components/promocoes/`:
+- `FlyerSourceCard` — card do passo 1.
+- `FlyerStatusChip` — badge de status (pending/processing/ready/failed).
+- `FlyerHistoryItem` — linha do histórico.
+- `EmptyPromocoes` — empty state ilustrado.
+
+### 5. Home — botão refeito
+
+Substituir o `Card` linear de "Promoções inteligentes" (linhas 414-427 de `home.tsx`) por um **bloco hero com 2 ações claras**:
 ```
-Distância calculada por Haversine. Resultado ordenado e cacheado em `localStorage` por 10 min com hash dos inputs (mesmo padrão do `insights-cache`).
+[ 🏷️  Promoções inteligentes ]
+   ── 12 ofertas ativas · economiza ~R$ 47
+[ Cadastrar panfleto ]  [ Ver ofertas → ]
+```
+Visual: gradient promo, dois botões secundários lado a lado, mostra contador real de promoções do user. Clicar "Cadastrar panfleto" leva para `/promocoes/cadastrar`; "Ver ofertas" leva para `/promocoes`.
 
-### 3. Telas (rotas TanStack)
+### 6. Navegação inferior
 
-Adicionar item "Ofertas" no `AppLayout` (substitui ícone Calendário por dropdown? Não — manter 5 itens, trocar `Produtos` para `Ofertas` no nav inferior, manter `/produtos` acessível via Cupons). Decisão: adicionar 6º slot não cabe em mobile-first; vou trocar **Calendário** por **Ofertas** no nav e mover Calendário para link interno na Home. *Ajuste:* manter o nav atual e adicionar **/promocoes** como hub acessível por um card de destaque na Home + deep links.
+Em `src/components/AppLayout.tsx`: trocar item "Calendário" (`/calendario`) por "Ofertas" (`/promocoes`) com ícone `Tag`. Calendário continua acessível via card na Home (já existe ShortcutCard).
 
-Rotas criadas em `src/routes/`:
+### 7. Integração Firecrawl
 
-- `promocoes.index.tsx` — **Home Promoções**: hero "Você pode economizar R$ X hoje", carrossel "Perto de você", grid "Recomendadas pra você", seção "Seus produtos em oferta", banner de mercados parceiros (chips clicáveis).
-- `promocoes.explorar.tsx` — **Explorar** com filtros (Sheet lateral): mercado (multi), categoria (chips), faixa de preço (slider), distância (slider km), validade (hoje/semana/mês), desconto mínimo (slider). Lista virtual de cards.
-- `promocoes.cesta.tsx` — **Comparador de Cesta**: usuário adiciona produtos (autocomplete sobre `promo_products`), define quantidade, sistema soma o melhor preço de cada produto por mercado e mostra ranking "Mercado A R$ X · economiza R$ Y vs pior opção". Mostra também "cesta dividida" (quais itens comprar em cada mercado).
-- `promocoes.alertas.tsx` — **Alertas** com tabs "Não lidos / Todos". Cada item tem CTA "Ver oferta".
-- `promocoes.favoritos.tsx` — **Favoritos**: produtos da watchlist com mini sparkline de preço (recharts) e badge "em oferta agora".
-- `promocoes.mercado.$id.tsx` — **Mercado detalhe**: header com logo/cor da rede, mapa simples (link Google Maps), grid de promoções daquele mercado agrupadas por categoria.
-- `promocoes.produto.$id.tsx` — **Produto detalhe**: histórico de preço (LineChart), ofertas atuais por mercado, botão "Adicionar à watchlist".
+Conectar via `standard_connectors--connect` com `connector_id: firecrawl`. Após conectado, a edge function `extract-flyer` usa `FIRECRAWL_API_KEY` direto (SDK `@mendable/firecrawl-js` não roda em Deno → usar fetch REST `https://api.firecrawl.dev/v2/scrape`).
 
-Componentes em `src/components/promocoes/`: `PromoCard`, `StoreChip`, `DiscountBadge`, `EconomyMeter`, `PriceSparkline`, `FilterSheet`, `BasketBuilder`.
+---
 
-### 4. Automações (pg_cron + rotas públicas)
-
-Quatro rotas em `src/routes/api/public/hooks/`:
-
-- `promotions-load.ts` — POST: insere promoções demo "rotativas" (simula scraping). Roda 06:00.
-- `promotions-rank.ts` — POST: recalcula `discount_pct`, marca top 100 do dia em `promotions.is_featured`. Roda 06:30.
-- `promotions-alerts.ts` — POST: para cada `user_watchlist`, se há promoção ativa hoje insere `promo_notifications` (kind='favorite_on_sale' ou 'price_drop' se `price < min(price_history.price)`). Roda 07:00.
-- `promotions-cleanup.ts` — POST: `UPDATE promotions SET status='expirada' WHERE ends_at < now()`. Roda 08:00.
-
-Todas validam header `Authorization: Bearer <anon-key>`. SQL de `cron.schedule` aplicado via insert tool (não migração).
-
-### 5. Dados demo (seed via insert tool)
-
-- 1 cidade: São Carlos/SP (lat -22.0175, lng -47.8908) + 4 cidades vizinhas.
-- 5 mercados: Savegnago, Covabra, Pague Menos, Dalben, Enxuto — cada um com cor de marca, emoji, lat/lng dentro de 10km.
-- 10 categorias: Alimentos, Bebidas, Hortifruti, Carnes, Laticínios, Padaria, Limpeza, Higiene, Pet, Bebê.
-- 50 produtos com brand, unit, emoji.
-- ~150 aliases para casar com `receipt_items` existentes.
-- 100 promoções ativas (prazos próximos), distribuídas pelos 5 mercados, descontos 10–55%.
-- 12 meses de `promo_price_history` (3–5 pontos por produto/mercado) para gerar sparklines críveis.
-
-### 6. UX / visual
-
-- Paleta atual (verde primary) + acento laranja `--promo-hot` para badges de desconto.
-- Cards: `rounded-2xl`, sombra suave, header colorido com a cor da rede, ribbon diagonal "−35%" quando desconto ≥ 30%.
-- "Economia estimada hoje" como hero com número grande animado (count-up).
-- Distância em badge `📍 1.2km`, validade em badge `⏱ acaba em 4h` (vermelho se < 6h).
-- Empty states ilustrados com lucide + copy curta. Skeletons em todos os fetches.
-- Mobile-first 100% (max-w-md como o resto do app).
-
-### 7. Integração com o app existente
-
-- Card novo na `/home` ("Ofertas pra você · economize R$ X") linkando para `/promocoes`.
-- Botão "Adicionar à lista" em `/promocoes/produto/$id` empurra item na shopping list de `/lista` (reusa `localStorage` key `cuponizei:shopping-list`).
-- Onboarding: `favorite_brands` e `favorite_stores` do `household_profile` já alimentam o score sem mudanças.
-- Receipts existentes alimentam `frequencia_compra` via join `receipt_items.canonical_name = promo_product_aliases.alias`.
-
-### Diagrama de dependências
+### Diagrama do fluxo
 
 ```text
-receipts ─┐
-           ├─► frequencia(produto)
-items   ──┘                       \
-                                    ─► score ─► ranking ─► PromoCard
-promotions ─► discount, urgência   /
-user_location ─► distância        /
-watchlist ─► favorito boost      /
-events ─► CTR boost            /
+Home → "Cadastrar panfleto"
+  ↓
+/promocoes/cadastrar → escolhe fonte + envia
+  ↓
+INSERT promo_flyers (status=pending) + upload (se arquivo)
+  ↓
+invoke extract-flyer(flyer_id)
+  ↓
+[Firecrawl scrape] OU [fetch direto] OU [storage download]
+  ↓
+Lovable AI: detect_store + extract_flyer_items
+  ↓
+upsert promo_stores → upsert promo_products → INSERT promotions (user_id, flyer_id)
+  ↓
+status=ready → /promocoes mostra ofertas novas
 ```
 
 ### Detalhes técnicos / arquivos
 
-- **Migração SQL**: `supabase/migrations/<timestamp>_promocoes.sql` — cria 11 tabelas + RLS + índices + trigger `set_updated_at` em `promotions`.
-- **Seed**: rodado via tool de insert (uma vez), idempotente por `ON CONFLICT DO NOTHING`.
-- **Rotas API**: 4 arquivos em `src/routes/api/public/hooks/promotions-*.ts` com `createFileRoute` + Bearer check.
-- **Cron**: 4 `cron.schedule` apontando para `https://project--cc7ea5a4-6306-4151-8435-175b40b88518.lovable.app/api/public/hooks/promotions-*`.
-- **Front**: 7 rotas + 7 componentes em `src/components/promocoes/`.
-- **Lib**: `src/lib/promo-score.ts` (haversine + score), `src/lib/promo-cache.ts` (cache local 10 min).
-- **Nav**: card de entrada na Home + link no header de cada subseção (breadcrumb leve).
-- **Tipos**: `src/integrations/supabase/types.ts` regenerado automaticamente após migração.
+- **Migração**: `supabase/migrations/<ts>_flyers.sql` — tabela `promo_flyers`, alters em `promotions`/`promo_stores`, bucket `flyers` + policies.
+- **Edge function**: `supabase/functions/extract-flyer/index.ts` (nova) + entry no `supabase/config.toml` se necessário.
+- **Conector**: Firecrawl via `standard_connectors--connect` antes de deploy (eu peço a conexão).
+- **Routes novas**: `src/routes/promocoes.cadastrar.tsx`.
+- **Routes editadas**: `src/routes/promocoes.index.tsx` (UX refeita), `src/routes/home.tsx` (botão refeito), `src/components/AppLayout.tsx` (nav).
+- **Componentes novos**: 4 arquivos em `src/components/promocoes/`.
+- **Lib**: `src/lib/promo-data.ts` ganha filtro por `user_id IS NULL OR user_id = me`. `src/lib/flyer-poll.ts` (polling helper).
+- **Tipos**: `src/integrations/supabase/types.ts` regenerado automaticamente.
+- **Validação client**: zod schemas para URL e tamanho de arquivo.
+- **Segurança**: RLS em `promo_flyers`, bucket privado, edge function valida `user_id` da row, prompt da IA com `temperature: 0` e `seed: 42` (consistência igual aos outros caches).
 
-### Fora de escopo (deixado pronto para evoluir)
-
-- Scraper real de encartes (a infraestrutura de `promotions.source` e os cron jobs já preveem o plug).
-- Geolocalização do navegador (campo manual de cidade no MVP; `navigator.geolocation` fica como TODO no `/promocoes/explorar`).
-- Push notifications (apenas in-app via `promo_notifications` + badge no nav).
+### Fora de escopo
+- Compartilhar panfleto entre usuários (visibilidade pública opt-in fica como TODO).
+- Re-processamento agendado quando panfleto vence (o cron `promotions-cleanup` já expira automaticamente; refresh manual via botão "Reprocessar" no histórico).
+- OCR offline — sempre usa Lovable AI multimodal.
 
