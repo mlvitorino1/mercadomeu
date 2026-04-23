@@ -304,7 +304,7 @@ function ListaPage() {
       }),
     );
   }
-  }
+
 
   function removeItem(id: string) {
     setList((l) => l.filter((it) => it.id !== id));
