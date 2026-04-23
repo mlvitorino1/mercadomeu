@@ -35,7 +35,7 @@ type Forecast = {
 export const Route = createFileRoute("/home")({
   head: () => ({
     meta: [
-      { title: "Home — Cuponizei" },
+      { title: "Home — CuponizAI" },
       { name: "description", content: "Resumo financeiro, previsão IA, dicas de economia e conquistas." },
     ],
   }),

@@ -29,7 +29,7 @@ export const Route = createFileRoute("/estoque")({
   }),
   head: () => ({
     meta: [
-      { title: "Provável baixa de estoque — Cuponizei" },
+      { title: "Provável baixa de estoque — CuponizAI" },
       { name: "description", content: "Veja as compras que originaram a previsão e ajuste sua casa." },
     ],
   }),

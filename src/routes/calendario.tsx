@@ -16,7 +16,7 @@ type Receipt = Database["public"]["Tables"]["receipts"]["Row"];
 export const Route = createFileRoute("/calendario")({
   head: () => ({
     meta: [
-      { title: "Calendário — Cuponizei" },
+      { title: "Calendário — CuponizAI" },
       { name: "description", content: "Veja seus cupons distribuídos ao longo do mês." },
     ],
   }),

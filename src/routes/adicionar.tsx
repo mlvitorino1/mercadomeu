@@ -21,7 +21,7 @@ import { CATEGORIES, CATEGORY_LABELS, formatBRL } from "@/lib/format";
 export const Route = createFileRoute("/adicionar")({
   head: () => ({
     meta: [
-      { title: "Adicionar cupom — Cuponizei" },
+      { title: "Adicionar cupom — CuponizAI" },
       { name: "description", content: "Tire foto do cupom fiscal e deixe a IA extrair os dados." },
     ],
   }),
