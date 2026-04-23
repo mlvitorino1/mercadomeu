@@ -7,10 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, PackageOpen, Users, Baby, Dog, Save, ShoppingBasket, Sparkles } from "lucide-react";
+import { ArrowLeft, PackageOpen, Users, Baby, Dog, Save, ShoppingBasket, Sparkles, RefreshCw } from "lucide-react";
 import { formatBRL, formatDate, CATEGORY_LABELS } from "@/lib/format";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { hashInputs, readCache, writeCache, clearCache, formatRelativeTime } from "@/lib/insights-cache";
 
 type Receipt = Database["public"]["Tables"]["receipts"]["Row"];
 type Item = Database["public"]["Tables"]["receipt_items"]["Row"];
@@ -46,6 +47,7 @@ function EstoquePage() {
   const [items, setItems] = useState<Item[]>([]);
   const [household, setHousehold] = useState<Household | null>(null);
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 

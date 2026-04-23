@@ -450,6 +450,11 @@ function ListaPage() {
         {/* Lista */}
         {list.length > 0 && (
           <>
+            {lastGeneratedAt && (
+              <p className="px-1 text-[10px] text-muted-foreground">
+                Última geração {formatRelativeTime(lastGeneratedAt)} · {list.filter((l) => l.source !== "manual").length} da IA, {list.filter((l) => l.source === "manual").length} {list.filter((l) => l.source === "manual").length === 1 ? "manual" : "manuais"}
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={copyList} className="h-8 text-xs">
                 <Copy className="size-3.5" /> Copiar
