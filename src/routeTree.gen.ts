@@ -28,6 +28,10 @@ import { Route as ProdutosIdRouteImport } from './routes/produtos.$id'
 import { Route as CuponsIdRouteImport } from './routes/cupons.$id'
 import { Route as PromocoesProdutoIdRouteImport } from './routes/promocoes.produto.$id'
 import { Route as PromocoesMercadoIdRouteImport } from './routes/promocoes.mercado.$id'
+import { Route as ApiPublicHooksPromotionsRankRouteImport } from './routes/api/public/hooks/promotions-rank'
+import { Route as ApiPublicHooksPromotionsLoadRouteImport } from './routes/api/public/hooks/promotions-load'
+import { Route as ApiPublicHooksPromotionsCleanupRouteImport } from './routes/api/public/hooks/promotions-cleanup'
+import { Route as ApiPublicHooksPromotionsAlertsRouteImport } from './routes/api/public/hooks/promotions-alerts'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -124,6 +128,30 @@ const PromocoesMercadoIdRoute = PromocoesMercadoIdRouteImport.update({
   path: '/promocoes/mercado/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksPromotionsRankRoute =
+  ApiPublicHooksPromotionsRankRouteImport.update({
+    id: '/api/public/hooks/promotions-rank',
+    path: '/api/public/hooks/promotions-rank',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksPromotionsLoadRoute =
+  ApiPublicHooksPromotionsLoadRouteImport.update({
+    id: '/api/public/hooks/promotions-load',
+    path: '/api/public/hooks/promotions-load',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksPromotionsCleanupRoute =
+  ApiPublicHooksPromotionsCleanupRouteImport.update({
+    id: '/api/public/hooks/promotions-cleanup',
+    path: '/api/public/hooks/promotions-cleanup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksPromotionsAlertsRoute =
+  ApiPublicHooksPromotionsAlertsRouteImport.update({
+    id: '/api/public/hooks/promotions-alerts',
+    path: '/api/public/hooks/promotions-alerts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -145,6 +173,10 @@ export interface FileRoutesByFullPath {
   '/promocoes/': typeof PromocoesIndexRoute
   '/promocoes/mercado/$id': typeof PromocoesMercadoIdRoute
   '/promocoes/produto/$id': typeof PromocoesProdutoIdRoute
+  '/api/public/hooks/promotions-alerts': typeof ApiPublicHooksPromotionsAlertsRoute
+  '/api/public/hooks/promotions-cleanup': typeof ApiPublicHooksPromotionsCleanupRoute
+  '/api/public/hooks/promotions-load': typeof ApiPublicHooksPromotionsLoadRoute
+  '/api/public/hooks/promotions-rank': typeof ApiPublicHooksPromotionsRankRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -166,6 +198,10 @@ export interface FileRoutesByTo {
   '/promocoes': typeof PromocoesIndexRoute
   '/promocoes/mercado/$id': typeof PromocoesMercadoIdRoute
   '/promocoes/produto/$id': typeof PromocoesProdutoIdRoute
+  '/api/public/hooks/promotions-alerts': typeof ApiPublicHooksPromotionsAlertsRoute
+  '/api/public/hooks/promotions-cleanup': typeof ApiPublicHooksPromotionsCleanupRoute
+  '/api/public/hooks/promotions-load': typeof ApiPublicHooksPromotionsLoadRoute
+  '/api/public/hooks/promotions-rank': typeof ApiPublicHooksPromotionsRankRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -188,6 +224,10 @@ export interface FileRoutesById {
   '/promocoes/': typeof PromocoesIndexRoute
   '/promocoes/mercado/$id': typeof PromocoesMercadoIdRoute
   '/promocoes/produto/$id': typeof PromocoesProdutoIdRoute
+  '/api/public/hooks/promotions-alerts': typeof ApiPublicHooksPromotionsAlertsRoute
+  '/api/public/hooks/promotions-cleanup': typeof ApiPublicHooksPromotionsCleanupRoute
+  '/api/public/hooks/promotions-load': typeof ApiPublicHooksPromotionsLoadRoute
+  '/api/public/hooks/promotions-rank': typeof ApiPublicHooksPromotionsRankRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -211,6 +251,10 @@ export interface FileRouteTypes {
     | '/promocoes/'
     | '/promocoes/mercado/$id'
     | '/promocoes/produto/$id'
+    | '/api/public/hooks/promotions-alerts'
+    | '/api/public/hooks/promotions-cleanup'
+    | '/api/public/hooks/promotions-load'
+    | '/api/public/hooks/promotions-rank'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -232,6 +276,10 @@ export interface FileRouteTypes {
     | '/promocoes'
     | '/promocoes/mercado/$id'
     | '/promocoes/produto/$id'
+    | '/api/public/hooks/promotions-alerts'
+    | '/api/public/hooks/promotions-cleanup'
+    | '/api/public/hooks/promotions-load'
+    | '/api/public/hooks/promotions-rank'
   id:
     | '__root__'
     | '/'
@@ -253,6 +301,10 @@ export interface FileRouteTypes {
     | '/promocoes/'
     | '/promocoes/mercado/$id'
     | '/promocoes/produto/$id'
+    | '/api/public/hooks/promotions-alerts'
+    | '/api/public/hooks/promotions-cleanup'
+    | '/api/public/hooks/promotions-load'
+    | '/api/public/hooks/promotions-rank'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,6 +327,10 @@ export interface RootRouteChildren {
   PromocoesIndexRoute: typeof PromocoesIndexRoute
   PromocoesMercadoIdRoute: typeof PromocoesMercadoIdRoute
   PromocoesProdutoIdRoute: typeof PromocoesProdutoIdRoute
+  ApiPublicHooksPromotionsAlertsRoute: typeof ApiPublicHooksPromotionsAlertsRoute
+  ApiPublicHooksPromotionsCleanupRoute: typeof ApiPublicHooksPromotionsCleanupRoute
+  ApiPublicHooksPromotionsLoadRoute: typeof ApiPublicHooksPromotionsLoadRoute
+  ApiPublicHooksPromotionsRankRoute: typeof ApiPublicHooksPromotionsRankRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -412,6 +468,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PromocoesMercadoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/promotions-rank': {
+      id: '/api/public/hooks/promotions-rank'
+      path: '/api/public/hooks/promotions-rank'
+      fullPath: '/api/public/hooks/promotions-rank'
+      preLoaderRoute: typeof ApiPublicHooksPromotionsRankRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/promotions-load': {
+      id: '/api/public/hooks/promotions-load'
+      path: '/api/public/hooks/promotions-load'
+      fullPath: '/api/public/hooks/promotions-load'
+      preLoaderRoute: typeof ApiPublicHooksPromotionsLoadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/promotions-cleanup': {
+      id: '/api/public/hooks/promotions-cleanup'
+      path: '/api/public/hooks/promotions-cleanup'
+      fullPath: '/api/public/hooks/promotions-cleanup'
+      preLoaderRoute: typeof ApiPublicHooksPromotionsCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/promotions-alerts': {
+      id: '/api/public/hooks/promotions-alerts'
+      path: '/api/public/hooks/promotions-alerts'
+      fullPath: '/api/public/hooks/promotions-alerts'
+      preLoaderRoute: typeof ApiPublicHooksPromotionsAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -435,6 +519,10 @@ const rootRouteChildren: RootRouteChildren = {
   PromocoesIndexRoute: PromocoesIndexRoute,
   PromocoesMercadoIdRoute: PromocoesMercadoIdRoute,
   PromocoesProdutoIdRoute: PromocoesProdutoIdRoute,
+  ApiPublicHooksPromotionsAlertsRoute: ApiPublicHooksPromotionsAlertsRoute,
+  ApiPublicHooksPromotionsCleanupRoute: ApiPublicHooksPromotionsCleanupRoute,
+  ApiPublicHooksPromotionsLoadRoute: ApiPublicHooksPromotionsLoadRoute,
+  ApiPublicHooksPromotionsRankRoute: ApiPublicHooksPromotionsRankRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
