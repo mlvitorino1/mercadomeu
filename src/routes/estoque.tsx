@@ -283,6 +283,21 @@ function EstoquePage() {
           <Sparkles className="size-4 shrink-0 text-primary" />
         </Link>
 
+        {alerts.length > 0 && !generating && (
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[10px] text-muted-foreground">
+              {generatedAt ? `Atualizado ${formatRelativeTime(generatedAt)}` : "Estimativas atualizadas"}
+            </p>
+            <button
+              onClick={() => generate(true)}
+              aria-label="Recalcular previsão"
+              className="flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+            >
+              <RefreshCw className="size-3" /> Recalcular
+            </button>
+          </div>
+        )}
+
         {loading || generating ? (
           <>
             <Skeleton className="h-40 w-full" />
