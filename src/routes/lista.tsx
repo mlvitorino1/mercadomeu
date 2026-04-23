@@ -15,6 +15,7 @@ import { CATEGORY_LABELS } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
+import { hashInputs, readCache, writeCache, clearCache, slugify, formatRelativeTime } from "@/lib/insights-cache";
 
 type Item = Database["public"]["Tables"]["receipt_items"]["Row"];
 type Receipt = Database["public"]["Tables"]["receipts"]["Row"];
@@ -28,6 +29,17 @@ type ListItem = {
   source: "stock" | "frequent" | "manual";
   reason?: string;
   checked: boolean;
+  /** Marcador de edição manual: se true, o merge não substitui/remove esse item. */
+  edited?: boolean;
+};
+
+type StockPayload = {
+  stock_alerts?: Array<{
+    product: string;
+    category: string;
+    days_left_estimate: number;
+    reason: string;
+  }>;
 };
 
 export const Route = createFileRoute("/lista")({
@@ -51,6 +63,7 @@ function ListaPage() {
   const [list, setList] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [newItem, setNewItem] = useState("");
 
   useEffect(() => {
