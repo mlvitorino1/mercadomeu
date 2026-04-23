@@ -409,7 +409,7 @@ function ListaPage() {
       <div className="space-y-3 px-4 py-5">
         {/* Gerar com IA */}
         <Button
-          onClick={generateSmartList}
+          onClick={() => generateSmartList(list.length > 0)}
           disabled={generating || loading || items.length === 0}
           className="w-full bg-gradient-primary text-base font-semibold shadow-elevated"
           size="lg"
