@@ -30,7 +30,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
 
       <nav className="fixed bottom-0 left-1/2 z-50 flex w-full max-w-md -translate-x-1/2 items-stretch border-t border-border bg-card/95 backdrop-blur-md shadow-elevated">
-        {navItem("/", Home, "Início", path === "/")}
+        {navItem("/home", Home, "Início", path === "/" || path.startsWith("/home"))}
         {navItem("/calendario", CalendarDays, "Calendário", path.startsWith("/calendario"))}
         <Link
           to="/adicionar"
