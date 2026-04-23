@@ -47,6 +47,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cities: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          name: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          name: string
+          state: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          name?: string
+          state?: string
+        }
+        Relationships: []
+      }
       household_profile: {
         Row: {
           adults: number
@@ -151,6 +178,296 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      promo_categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      promo_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          promotion_id: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          kind: string
+          promotion_id?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          promotion_id?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_notifications_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_price_history: {
+        Row: {
+          created_at: string
+          id: string
+          observed_at: string
+          price: number
+          product_id: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observed_at?: string
+          price: number
+          product_id: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observed_at?: string
+          price?: number
+          product_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_price_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "promo_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_price_history_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "promo_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_product_aliases: {
+        Row: {
+          alias: string
+          created_at: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_product_aliases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "promo_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_products: {
+        Row: {
+          brand: string | null
+          category_id: string | null
+          created_at: string
+          id: string
+          image_emoji: string
+          name: string
+          unit: string
+        }
+        Insert: {
+          brand?: string | null
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          image_emoji?: string
+          name: string
+          unit?: string
+        }
+        Update: {
+          brand?: string | null
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          image_emoji?: string
+          name?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "promo_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_stores: {
+        Row: {
+          address: string | null
+          brand_color: string
+          chain: string
+          city_id: string | null
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          logo_emoji: string
+          name: string
+        }
+        Insert: {
+          address?: string | null
+          brand_color?: string
+          chain: string
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          logo_emoji?: string
+          name: string
+        }
+        Update: {
+          address?: string | null
+          brand_color?: string
+          chain?: string
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          logo_emoji?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_stores_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotions: {
+        Row: {
+          created_at: string
+          discount_pct: number | null
+          ends_at: string
+          id: string
+          is_featured: boolean
+          original_price: number
+          price: number
+          product_id: string
+          source: string
+          starts_at: string
+          status: string
+          stock_level: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_pct?: number | null
+          ends_at: string
+          id?: string
+          is_featured?: boolean
+          original_price: number
+          price: number
+          product_id: string
+          source?: string
+          starts_at?: string
+          status?: string
+          stock_level?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_pct?: number | null
+          ends_at?: string
+          id?: string
+          is_featured?: boolean
+          original_price?: number
+          price?: number
+          product_id?: string
+          source?: string
+          starts_at?: string
+          status?: string
+          stock_level?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "promo_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "promo_stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipt_items: {
         Row: {
@@ -286,6 +603,79 @@ export type Database = {
         }
         Relationships: []
       }
+      user_location: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          radius_km: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          radius_km?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          radius_km?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_location_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_promotion_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          promotion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          promotion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          promotion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_promotion_events_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -306,6 +696,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_watchlist: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          target_price: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          target_price?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          target_price?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_watchlist_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "promo_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
