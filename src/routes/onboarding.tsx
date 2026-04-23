@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Check, Users, Wallet, Heart, ShoppingCart, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Users, Wallet, Heart, ShoppingCart, Sparkles, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +38,11 @@ type FormState = {
   favorite_stores: string;
   shopping_frequency: string;
   preferred_payment_method: string;
+  city_id: string;
+  radius_km: number;
 };
+
+type City = { id: string; name: string; state: string };
 
 const RESTRICTIONS = [
   { id: "vegetariano", label: "Vegetariano" },
@@ -54,6 +58,7 @@ const STEPS = [
   { id: 1, icon: Wallet, title: "Orçamento", subtitle: "Quanto investe por mês?" },
   { id: 2, icon: Heart, title: "Preferências", subtitle: "Restrições e mercados favoritos" },
   { id: 3, icon: ShoppingCart, title: "Hábitos", subtitle: "Como você costuma comprar?" },
+  { id: 4, icon: MapPin, title: "Sua região", subtitle: "Onde encontrar promoções perto de você" },
 ];
 
 function OnboardingPage() {
@@ -72,34 +77,41 @@ function OnboardingPage() {
     favorite_stores: "",
     shopping_frequency: "",
     preferred_payment_method: "",
+    city_id: "",
+    radius_km: 5,
   });
+  const [cities, setCities] = useState<City[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/auth" });
   }, [user, authLoading, navigate]);
 
-  // Pré-carrega valores se o usuário já tinha começado
+  // Carrega cidades e valores prévios
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("household_profile")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data) {
-        setForm({
-          adults: data.adults,
-          children: data.children,
-          pets: data.pets,
-          income_range: data.income_range ?? "",
-          monthly_grocery_budget: data.monthly_grocery_budget?.toString() ?? "",
-          restrictions: data.restrictions ?? [],
-          favorite_stores: (data.favorite_stores ?? []).join(", "),
-          shopping_frequency: data.shopping_frequency ?? "",
-          preferred_payment_method: data.preferred_payment_method ?? "",
-        });
-      }
+      const [profileRes, locationRes, citiesRes] = await Promise.all([
+        supabase.from("household_profile").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_location").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("cities").select("id, name, state").order("name"),
+      ]);
+      if (citiesRes.data) setCities(citiesRes.data);
+      const data = profileRes.data;
+      const loc = locationRes.data;
+      setForm((s) => ({
+        ...s,
+        adults: data?.adults ?? s.adults,
+        children: data?.children ?? s.children,
+        pets: data?.pets ?? s.pets,
+        income_range: data?.income_range ?? "",
+        monthly_grocery_budget: data?.monthly_grocery_budget?.toString() ?? "",
+        restrictions: data?.restrictions ?? [],
+        favorite_stores: (data?.favorite_stores ?? []).join(", "),
+        shopping_frequency: data?.shopping_frequency ?? "",
+        preferred_payment_method: data?.preferred_payment_method ?? "",
+        city_id: loc?.city_id ?? "",
+        radius_km: loc?.radius_km ?? 5,
+      }));
       setLoadingProfile(false);
     })();
   }, [user]);
@@ -141,6 +153,30 @@ function OnboardingPage() {
     if (error) {
       toast.error("Não consegui salvar agora. Tente de novo.");
       return false;
+    }
+
+    // Persiste cidade escolhida (se houver) na user_location
+    if (form.city_id) {
+      const city = cities.find((c) => c.id === form.city_id);
+      // Coords aproximadas via lookup direto na tabela (server tem lat/lng)
+      const { data: cityRow } = await supabase
+        .from("cities")
+        .select("lat, lng")
+        .eq("id", form.city_id)
+        .maybeSingle();
+      const locPayload = {
+        user_id: user.id,
+        city_id: form.city_id,
+        lat: cityRow?.lat ?? null,
+        lng: cityRow?.lng ?? null,
+        radius_km: form.radius_km,
+      };
+      const { error: locErr } = await supabase
+        .from("user_location")
+        .upsert(locPayload, { onConflict: "user_id" });
+      if (locErr) {
+        console.warn("Falha ao salvar localização", locErr, city);
+      }
     }
     return true;
   }
@@ -362,6 +398,58 @@ function OnboardingPage() {
                   <p className="text-xs leading-relaxed text-foreground">
                     Vamos cruzar essas informações com seus cupons para prever a duração de itens, alertar sobre estoque
                     baixo e sugerir economia para sua casa.
+                  </p>
+                </div>
+              </Card>
+            </>
+          )}
+
+          {step === 4 && (
+            <>
+              <div className="space-y-2">
+                <Label>Sua cidade</Label>
+                <Select value={form.city_id} onValueChange={(v) => update("city_id", v)}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Selecione sua cidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} – {c.state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Usamos para mostrar mercados e promoções perto de você.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Raio de busca</Label>
+                  <span className="text-xs font-semibold text-primary">{form.radius_km} km</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={form.radius_km}
+                  onChange={(e) => update("radius_km", Number(e.target.value))}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+                />
+                <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <span>1 km</span>
+                  <span>20 km</span>
+                </div>
+              </div>
+
+              <Card className="border-primary/20 bg-primary/5 p-4">
+                <div className="flex gap-3">
+                  <MapPin className="size-4 shrink-0 text-primary" />
+                  <p className="text-xs leading-relaxed text-foreground">
+                    Quanto maior o raio, mais ofertas encontramos — mas com mercados um pouco mais distantes.
                   </p>
                 </div>
               </Card>
