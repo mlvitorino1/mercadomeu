@@ -23,6 +23,7 @@ import { Route as CuponsIndexRouteImport } from './routes/cupons.index'
 import { Route as PromocoesFavoritosRouteImport } from './routes/promocoes.favoritos'
 import { Route as PromocoesExplorarRouteImport } from './routes/promocoes.explorar'
 import { Route as PromocoesCestaRouteImport } from './routes/promocoes.cesta'
+import { Route as PromocoesCadastrarRouteImport } from './routes/promocoes.cadastrar'
 import { Route as PromocoesAlertasRouteImport } from './routes/promocoes.alertas'
 import { Route as ProdutosIdRouteImport } from './routes/produtos.$id'
 import { Route as CuponsIdRouteImport } from './routes/cupons.$id'
@@ -103,6 +104,11 @@ const PromocoesCestaRoute = PromocoesCestaRouteImport.update({
   path: '/promocoes/cesta',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PromocoesCadastrarRoute = PromocoesCadastrarRouteImport.update({
+  id: '/promocoes/cadastrar',
+  path: '/promocoes/cadastrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PromocoesAlertasRoute = PromocoesAlertasRouteImport.update({
   id: '/promocoes/alertas',
   path: '/promocoes/alertas',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/promocoes/alertas': typeof PromocoesAlertasRoute
+  '/promocoes/cadastrar': typeof PromocoesCadastrarRoute
   '/promocoes/cesta': typeof PromocoesCestaRoute
   '/promocoes/explorar': typeof PromocoesExplorarRoute
   '/promocoes/favoritos': typeof PromocoesFavoritosRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/promocoes/alertas': typeof PromocoesAlertasRoute
+  '/promocoes/cadastrar': typeof PromocoesCadastrarRoute
   '/promocoes/cesta': typeof PromocoesCestaRoute
   '/promocoes/explorar': typeof PromocoesExplorarRoute
   '/promocoes/favoritos': typeof PromocoesFavoritosRoute
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/cupons/$id': typeof CuponsIdRoute
   '/produtos/$id': typeof ProdutosIdRoute
   '/promocoes/alertas': typeof PromocoesAlertasRoute
+  '/promocoes/cadastrar': typeof PromocoesCadastrarRoute
   '/promocoes/cesta': typeof PromocoesCestaRoute
   '/promocoes/explorar': typeof PromocoesExplorarRoute
   '/promocoes/favoritos': typeof PromocoesFavoritosRoute
@@ -243,6 +252,7 @@ export interface FileRouteTypes {
     | '/cupons/$id'
     | '/produtos/$id'
     | '/promocoes/alertas'
+    | '/promocoes/cadastrar'
     | '/promocoes/cesta'
     | '/promocoes/explorar'
     | '/promocoes/favoritos'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/cupons/$id'
     | '/produtos/$id'
     | '/promocoes/alertas'
+    | '/promocoes/cadastrar'
     | '/promocoes/cesta'
     | '/promocoes/explorar'
     | '/promocoes/favoritos'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/cupons/$id'
     | '/produtos/$id'
     | '/promocoes/alertas'
+    | '/promocoes/cadastrar'
     | '/promocoes/cesta'
     | '/promocoes/explorar'
     | '/promocoes/favoritos'
@@ -319,6 +331,7 @@ export interface RootRouteChildren {
   CuponsIdRoute: typeof CuponsIdRoute
   ProdutosIdRoute: typeof ProdutosIdRoute
   PromocoesAlertasRoute: typeof PromocoesAlertasRoute
+  PromocoesCadastrarRoute: typeof PromocoesCadastrarRoute
   PromocoesCestaRoute: typeof PromocoesCestaRoute
   PromocoesExplorarRoute: typeof PromocoesExplorarRoute
   PromocoesFavoritosRoute: typeof PromocoesFavoritosRoute
@@ -433,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PromocoesCestaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/promocoes/cadastrar': {
+      id: '/promocoes/cadastrar'
+      path: '/promocoes/cadastrar'
+      fullPath: '/promocoes/cadastrar'
+      preLoaderRoute: typeof PromocoesCadastrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/promocoes/alertas': {
       id: '/promocoes/alertas'
       path: '/promocoes/alertas'
@@ -511,6 +531,7 @@ const rootRouteChildren: RootRouteChildren = {
   CuponsIdRoute: CuponsIdRoute,
   ProdutosIdRoute: ProdutosIdRoute,
   PromocoesAlertasRoute: PromocoesAlertasRoute,
+  PromocoesCadastrarRoute: PromocoesCadastrarRoute,
   PromocoesCestaRoute: PromocoesCestaRoute,
   PromocoesExplorarRoute: PromocoesExplorarRoute,
   PromocoesFavoritosRoute: PromocoesFavoritosRoute,
